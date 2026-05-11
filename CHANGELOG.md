@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.4 - 2026-05-11
+
+- Improved `npc list` empty-state output when no sites are managed yet.
+- Improved the terminal UI with a dashboard for Nginx, Docker, and managed-site status.
+- Added a managed-site list action inside the terminal UI.
+- Improved terminal UI panels, prompts, and Docker discovery copy.
+- Documented why `npc list` can be empty and how the UI reports empty states.
+
 ## 0.1.3 - 2026-05-11
 
 - Expanded README with a general explanation of how `npc` works.

@@ -21,6 +21,11 @@ func listCommand() *cobra.Command {
 		if app.jsonOut {
 			return writeJSON(cfg.SortedSites())
 		}
+		if len(cfg.Sites) == 0 {
+			fmt.Println("No npc-managed sites found.")
+			fmt.Println("Create one with `sudo npc create` or open the UI with `npc`.")
+			return nil
+		}
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 		fmt.Fprintln(w, "HOSTNAME\tENABLED\tSSL\tBACKEND\tCERT")
 		for _, site := range cfg.SortedSites() {
@@ -59,9 +64,14 @@ func statusCommand() *cobra.Command {
 		if app.jsonOut {
 			return writeJSON(status)
 		}
-		for k, v := range status {
-			fmt.Printf("%-18s %v\n", k+":", v)
-		}
+		fmt.Printf("%-18s %v\n", "nginx_installed:", status["nginx_installed"])
+		fmt.Printf("%-18s %v\n", "nginx_version:", status["nginx_version"])
+		fmt.Printf("%-18s %v\n", "nginx_active:", status["nginx_active"])
+		fmt.Printf("%-18s %v\n", "active_sites:", status["active_sites"])
+		fmt.Printf("%-18s %v\n", "disabled_sites:", status["disabled_sites"])
+		fmt.Printf("%-18s %v\n", "config_file:", status["config_file"])
+		fmt.Printf("%-18s %v\n", "sites_available:", status["sites_available"])
+		fmt.Printf("%-18s %v\n", "sites_enabled:", status["sites_enabled"])
 		return nil
 	}}
 }
