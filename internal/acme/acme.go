@@ -13,7 +13,23 @@ import (
 var DNSProviders = []string{"cloudflare", "hetzner", "netcup", "ionos", "route53", "digitalocean", "duckdns", "custom"}
 
 func Installed() bool {
-	return system.Exists("acme.sh")
+	return CommandPath() != ""
+}
+
+func CommandPath() string {
+	if system.Exists("acme.sh") {
+		return "acme.sh"
+	}
+	candidates := []string{
+		"/root/.acme.sh/acme.sh",
+		filepath.Join(os.Getenv("HOME"), ".acme.sh", "acme.sh"),
+	}
+	for _, candidate := range candidates {
+		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
+			return candidate
+		}
+	}
+	return ""
 }
 
 func Install(email string) error {
@@ -48,6 +64,43 @@ func Install(email string) error {
 	}
 	_, err = system.Run("sh", args...)
 	return err
+}
+
+func IssueHTTP(hostname, email string) error {
+	cmd := CommandPath()
+	if cmd == "" {
+		return fmt.Errorf("acme.sh was not found")
+	}
+	args := []string{"--issue", "-d", hostname, "-w", "/var/www/html"}
+	if email != "" {
+		args = append(args, "--accountemail", email)
+	}
+	res, err := system.Run(cmd, args...)
+	if err != nil {
+		return fmt.Errorf("acme.sh issue failed: %s", res.Output)
+	}
+	return nil
+}
+
+func InstallCert(hostname, fullchainPath, keyPath string) error {
+	cmd := CommandPath()
+	if cmd == "" {
+		return fmt.Errorf("acme.sh was not found")
+	}
+	if err := os.MkdirAll(filepath.Dir(fullchainPath), 0o700); err != nil {
+		return err
+	}
+	args := []string{
+		"--install-cert", "-d", hostname,
+		"--key-file", keyPath,
+		"--fullchain-file", fullchainPath,
+		"--reloadcmd", "systemctl reload nginx",
+	}
+	res, err := system.Run(cmd, args...)
+	if err != nil {
+		return fmt.Errorf("acme.sh install-cert failed: %s", res.Output)
+	}
+	return nil
 }
 
 func IssueCommand(hostname, method, provider, email string) []string {

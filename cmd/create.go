@@ -27,7 +27,7 @@ type createOptions struct {
 	backendPort                                     int
 	ssl, acme, redirectHTTPS, websocket, http2      bool
 	dryRun, force, noReload, noBackup               bool
-	nonInteractive, accessLog, errorLog             bool
+	nonInteractive, accessLog, errorLog, assumeYes  bool
 }
 
 var createOpts createOptions
@@ -110,6 +110,15 @@ func executeCreate(o createOptions) error {
 			return err
 		}
 	}
+	if site.SSL && site.ACME && site.ACMEMethod == "http" {
+		if err := prepareHTTP01Certificate(site); err != nil {
+			return err
+		}
+		content, err = renderer.RenderSite(site)
+		if err != nil {
+			return err
+		}
+	}
 	if err := nginx.WriteSite(site.ConfigPath, content); err != nil {
 		return err
 	}
@@ -137,10 +146,10 @@ func executeCreate(o createOptions) error {
 
 func ensureRuntimeDependencies(o createOptions) error {
 	if !system.Exists("nginx") {
-		if o.nonInteractive && !o.force {
+		if o.nonInteractive && !o.force && !o.assumeYes {
 			return validationError{fmt.Errorf("nginx is not installed; rerun interactively or use --force to install it")}
 		}
-		install := o.force
+		install := o.force || o.assumeYes
 		if !install {
 			install = promptConfirm("Nginx is not installed. Install it now with apt?", true)
 		}
@@ -153,10 +162,10 @@ func ensureRuntimeDependencies(o createOptions) error {
 		}
 	}
 	if o.acme && !acme.Installed() {
-		if o.nonInteractive && !o.force {
+		if o.nonInteractive && !o.force && !o.assumeYes {
 			return validationError{fmt.Errorf("acme.sh is not installed; rerun interactively or use --force to install it")}
 		}
-		install := o.force
+		install := o.force || o.assumeYes
 		if !install {
 			install = promptConfirm("acme.sh is not installed. Install it now?", true)
 		}
@@ -167,6 +176,40 @@ func ensureRuntimeDependencies(o createOptions) error {
 		if err := acme.Install(o.email); err != nil {
 			return fmt.Errorf("acme.sh installation failed: %w", err)
 		}
+	}
+	return nil
+}
+
+func prepareHTTP01Certificate(site *config.Site) error {
+	fmt.Println("Preparing HTTP-01 challenge config...")
+	if err := os.MkdirAll("/var/www/html", 0o755); err != nil {
+		return err
+	}
+	challenge := *site
+	challenge.SSL = false
+	challenge.RedirectHTTPS = false
+	challenge.ACME = true
+	challenge.ACMEMethod = "http"
+	content, err := renderer.RenderSite(&challenge)
+	if err != nil {
+		return err
+	}
+	if err := nginx.WriteSite(site.ConfigPath, content); err != nil {
+		return err
+	}
+	if err := nginx.Enable(site.ConfigPath, site.EnabledPath); err != nil {
+		return err
+	}
+	if out, err := nginx.Reload(); err != nil {
+		return nginxTestError{fmt.Errorf("nginx challenge config failed, certificate was not requested: %s", out)}
+	}
+	fmt.Println("Requesting certificate with acme.sh HTTP-01...")
+	if err := acme.IssueHTTP(site.Hostname, site.ACMEEmail); err != nil {
+		return err
+	}
+	fmt.Println("Installing certificate into /etc/npc/certs...")
+	if err := acme.InstallCert(site.Hostname, site.CertificatePath, site.CertificateKeyPath); err != nil {
+		return err
 	}
 	return nil
 }
@@ -192,9 +235,6 @@ func missingCreateFields(o createOptions) []string {
 		if o.keyPath == "" {
 			missing = append(missing, "--key-path")
 		}
-	}
-	if o.ssl && o.acme && o.email == "" {
-		missing = append(missing, "--email")
 	}
 	if o.ssl && o.acme && o.acmeMethod == "dns" && o.dnsProvider == "" {
 		missing = append(missing, "--dns-provider")

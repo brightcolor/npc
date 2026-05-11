@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/brightcolor/npc/internal/acme"
 	"github.com/brightcolor/npc/internal/config"
 	"github.com/brightcolor/npc/internal/docker"
 	"github.com/brightcolor/npc/internal/nginx"
@@ -21,6 +22,10 @@ func tuiCommand() *cobra.Command {
 
 func runTUI(cmd *cobra.Command, args []string) error {
 	ui := newTerminalUI()
+	ui.header()
+	if err := ui.ensureStartupDependencies(); err != nil {
+		return err
+	}
 	for {
 		ui.header()
 		ui.dashboard()
@@ -55,6 +60,52 @@ func runTUI(cmd *cobra.Command, args []string) error {
 			return nil
 		}
 	}
+}
+
+func (ui terminalUI) ensureStartupDependencies() error {
+	missingNginx := !system.Exists("nginx")
+	missingACME := !acme.Installed()
+	if !missingNginx && !missingACME {
+		return nil
+	}
+	fmt.Println(section("Startup Checks"))
+	fmt.Println(dim("npc checks required tools before you start configuring reverse proxies."))
+	fmt.Println()
+	if missingNginx {
+		fmt.Println(warn("Nginx is not installed."))
+		if ui.confirm("Install Nginx now with apt?", true) {
+			if err := system.RequireRoot(); err != nil {
+				return permissionError{fmt.Errorf("installing Nginx requires root; rerun with sudo npc")}
+			}
+			fmt.Println(dim("Running apt update and apt install nginx..."))
+			if err := nginx.InstallApt(true); err != nil {
+				return fmt.Errorf("nginx installation failed: %w", err)
+			}
+			fmt.Println(ok("Nginx installed."))
+		} else {
+			fmt.Println(dim("Skipping Nginx installation. Write actions will ask again before continuing."))
+		}
+		fmt.Println()
+	}
+	if missingACME {
+		fmt.Println(warn("acme.sh is not installed."))
+		if ui.confirm("Install acme.sh now?", true) {
+			if err := system.RequireRoot(); err != nil {
+				return permissionError{fmt.Errorf("installing acme.sh requires root; rerun with sudo npc")}
+			}
+			email := ui.askDefault("ACME account email, optional", "")
+			fmt.Println(dim("Downloading and running the official acme.sh installer..."))
+			if err := acme.Install(email); err != nil {
+				return fmt.Errorf("acme.sh installation failed: %w", err)
+			}
+			fmt.Println(ok("acme.sh installed."))
+		} else {
+			fmt.Println(dim("Skipping acme.sh installation. ACME certificate flows will ask again before continuing."))
+		}
+		fmt.Println()
+	}
+	ui.pause()
+	return nil
 }
 
 type terminalUI struct {

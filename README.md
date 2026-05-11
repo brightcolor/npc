@@ -49,6 +49,8 @@ The UI can scan running Docker containers, list their available ports, and creat
 
 The UI shows a dashboard with Nginx, Docker, and managed-site status before each action. It uses status badges, action cards, and a review screen before writing anything. If no sites exist yet, `npc list` and the UI show an empty-state message instead of returning a blank table.
 
+At startup, the UI checks for Nginx and `acme.sh`. If either tool is missing, `npc` asks whether it should install it. Nginx is installed through `apt`; `acme.sh` is installed through the official installer. Installation requires root, so start the UI with `sudo npc` when you want npc to install missing dependencies.
+
 Create a local reverse proxy interactively:
 
 ```bash
@@ -80,6 +82,26 @@ sudo npc create \
   --non-interactive
 ```
 
+Fast path with production defaults:
+
+```bash
+sudo npc app.example.com 3000
+```
+
+This shortcut means:
+
+- public hostname: `app.example.com`
+- backend: `http://127.0.0.1:3000`
+- HTTPS enabled with acme.sh HTTP-01
+- HTTP to HTTPS redirect enabled
+- WebSocket headers enabled
+- HTTP/2 enabled
+- standard security headers enabled
+- per-site access and error logs enabled
+- no overwrite when the vHost already exists
+
+The shortcut does not open the assistant. It stops only when validation fails, Nginx/acme.sh installation fails, certificate issuance fails, `nginx -t` fails, or the vHost already exists.
+
 Preview without writing:
 
 ```bash
@@ -106,6 +128,8 @@ npc create \
 8. It stores site metadata in `/etc/npc/config.yaml`.
 
 The generated Nginx config is a normal reverse proxy. Public traffic reaches Nginx on port 80 or 443, Nginx forwards the request to the backend service, and the backend receives standard proxy headers such as `X-Forwarded-For`, `X-Forwarded-Proto`, and `X-Real-IP`.
+
+For acme.sh HTTP-01 sites, `npc` uses a staged flow. It first writes a temporary HTTP challenge-capable config, reloads Nginx after `nginx -t`, requests the certificate, installs the certificate under `/etc/npc/certs/<hostname>/`, then writes the final HTTPS config and reloads again after another config test.
 
 `npc` does not replace Nginx. It writes managed Nginx config files and leaves Nginx in charge of serving traffic.
 

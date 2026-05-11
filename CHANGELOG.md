@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.7 - 2026-05-11
+
+- Added startup checks in the terminal UI for Nginx and `acme.sh`.
+- Added interactive install prompts for missing Nginx and `acme.sh` when launching `npc`.
+- Added quick-create mode: `sudo npc <hostname> <port>`.
+- Quick-create defaults to `http://127.0.0.1:<port>`, HTTPS via acme.sh HTTP-01, HTTPS redirect, WebSocket, HTTP/2, standard security headers, and per-site logs.
+- Added staged acme.sh HTTP-01 issuance before writing the final HTTPS Nginx config.
+- Documented startup dependency checks in the README.
+
 ## 0.1.6 - 2026-05-11
 
 - Added README screenshots for the terminal dashboard and reverse proxy review screen.
