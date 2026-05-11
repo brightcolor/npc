@@ -1,38 +1,45 @@
+<p align="center">
+  <img src="docs/assets/logo.svg" alt="npc - Nginx Proxy Configurator" width="760">
+</p>
+
 # npc
 
-`npc` is the Nginx Proxy Configurator: a Go-based single-binary CLI for installing, configuring, testing, and managing Nginx reverse proxy sites.
+`npc` is the **Nginx Proxy Configurator**: a single Go binary for installing, configuring, testing, and managing Nginx reverse proxy sites on Linux.
 
-It is aimed at Linux administrators who want fast, repeatable reverse proxy setup without hand-writing every Nginx server block. The project was generated from a broad initial spec, so treat early releases as carefully reviewed admin tooling rather than magic.
+It is built for administrators who want repeatable reverse proxy setup with safer defaults: backups before writes, `nginx -t` before reloads, explicit metadata, dry runs, and clear failure messages. This project started from a generated broad spec, so early releases should still be reviewed carefully before production rollout.
 
-## Why npc?
+## Status
 
-- Single Linux binary for `linux-amd64` and `linux-arm64`
-- Safe defaults: backup before writes, `nginx -t` before reloads, no unmanaged config overwrite by default
-- Clear metadata in `/etc/npc/config.yaml`
-- Managed Nginx files are marked with `# Managed by npc`
-- Supports dry runs for write-heavy flows
-- Prepared for acme.sh, DNS providers, maintenance mode, Docker discovery, and self-updates
+`v0.1.0` is the first MVP release. It includes the CLI structure, HTTP reverse proxy generation, manual certificate config, acme.sh scaffolding, backups, metadata, release builds, and tests. Some advanced flows are intentionally conservative and will mature over later releases.
 
-## Installation
+## Install
 
 ```bash
-curl -L -o npc https://github.com/<owner>/<repo>/releases/latest/download/npc-linux-amd64
+curl -L -o npc https://github.com/brightcolor/npc/releases/latest/download/npc-linux-amd64
 chmod +x npc
 sudo ./npc --install
 npc --version
 ```
 
-The installer copies the running binary to `/usr/local/bin/npc`, backs up an existing binary as `/usr/local/bin/npc.bak.<timestamp>`, sets executable permissions, and keeps the command available system-wide.
+For ARM64:
+
+```bash
+curl -L -o npc https://github.com/brightcolor/npc/releases/latest/download/npc-linux-arm64
+chmod +x npc
+sudo ./npc --install
+```
+
+`sudo ./npc --install` copies the running binary to `/usr/local/bin/npc`, backs up an existing binary as `/usr/local/bin/npc.bak.<timestamp>`, and sets executable permissions.
 
 ## Quick Start
 
-Interactive mode:
+Create a local reverse proxy interactively:
 
 ```bash
 sudo npc create
 ```
 
-Non-interactive HTTP reverse proxy:
+Create one non-interactively:
 
 ```bash
 sudo npc create \
@@ -43,7 +50,7 @@ sudo npc create \
   --non-interactive
 ```
 
-Dry run:
+Preview without writing:
 
 ```bash
 npc create \
@@ -57,32 +64,55 @@ npc create \
 
 ## Examples
 
-Local app:
+### Local App
 
 ```bash
-sudo npc create --hostname app.example.com --backend-host 127.0.0.1 --backend-port 3000 --backend-scheme http --non-interactive
+sudo npc create \
+  --hostname app.example.com \
+  --backend-host 127.0.0.1 \
+  --backend-port 3000 \
+  --backend-scheme http \
+  --non-interactive
 ```
 
-Docker container:
+### Docker Backend
 
 ```bash
 npc docker
-sudo npc create --hostname app.example.com --backend-host container-name --backend-port 8080 --profile docker --non-interactive
+
+sudo npc create \
+  --hostname app.example.com \
+  --backend-host container-name \
+  --backend-port 8080 \
+  --profile docker \
+  --non-interactive
 ```
 
-WebSocket app:
+### WebSocket App
 
 ```bash
-sudo npc create --hostname ws.example.com --backend-host 127.0.0.1 --backend-port 8080 --websocket --profile websocket --non-interactive
+sudo npc create \
+  --hostname ws.example.com \
+  --backend-host 127.0.0.1 \
+  --backend-port 8080 \
+  --websocket \
+  --profile websocket \
+  --non-interactive
 ```
 
-Upload profile:
+### Upload Profile
 
 ```bash
-sudo npc create --hostname files.example.com --backend-host 127.0.0.1 --backend-port 8080 --profile upload --client-max-body-size 1G --non-interactive
+sudo npc create \
+  --hostname files.example.com \
+  --backend-host 127.0.0.1 \
+  --backend-port 8080 \
+  --profile upload \
+  --client-max-body-size 1G \
+  --non-interactive
 ```
 
-Existing certificate:
+### Existing TLS Certificate
 
 ```bash
 sudo npc create \
@@ -97,7 +127,7 @@ sudo npc create \
   --non-interactive
 ```
 
-acme.sh HTTP-01 metadata and config preparation:
+### acme.sh HTTP-01
 
 ```bash
 sudo npc create \
@@ -112,7 +142,7 @@ sudo npc create \
   --non-interactive
 ```
 
-DNS-01 with Cloudflare metadata:
+### acme.sh DNS-01 with Cloudflare
 
 ```bash
 sudo npc create \
@@ -128,7 +158,7 @@ sudo npc create \
   --non-interactive
 ```
 
-## Common Commands
+## Commands
 
 ```bash
 npc list
@@ -144,13 +174,7 @@ sudo npc backup
 npc restore
 ```
 
-## SSL with acme.sh
-
-`npc` includes command construction and metadata for acme.sh flows. Early releases prepare certificate paths and Nginx config, and expose `npc certs renew` / `npc certs renew-all`. Full issuance orchestration should be reviewed per environment because DNS provider secrets and CA behavior vary.
-
-Secrets must be stored under `/etc/npc/secrets/<provider>.env` with mode `0600`. Do not paste secrets into logs, issue reports, or shell history.
-
-## Files
+## Managed Files
 
 ```text
 /etc/npc/config.yaml
@@ -165,18 +189,39 @@ Secrets must be stored under `/etc/npc/secrets/<provider>.env` with mode `0600`.
 /etc/nginx/sites-enabled/<hostname>.conf
 ```
 
-## Safety Notes
+Every generated Nginx config starts with:
 
-- Read-only commands do not require root.
+```nginx
+# Managed by npc
+# Do not edit manually unless you know what you are doing.
+# Hostname: <hostname>
+```
+
+## Safety Model
+
+- Read-only commands should work without root.
 - Write commands require root.
-- Existing manual Nginx configs are not overwritten unless forced.
-- Every reload path runs `nginx -t` first.
-- Use `--dry-run` before production changes.
-- Backups are stored under `/etc/npc/backups/<timestamp>/`.
+- Existing manual Nginx configs are not overwritten by default.
+- Reload and restart paths run `nginx -t` first.
+- `--dry-run` shows planned files and rendered config.
+- Backups are written under `/etc/npc/backups/<timestamp>/`.
+- Secrets belong in `/etc/npc/secrets/<provider>.env` with mode `0600`.
+
+## Build
+
+```bash
+make build
+make test
+make release
+```
+
+Release artifacts:
+
+- `npc-linux-amd64`
+- `npc-linux-arm64`
+- `SHA256SUMS`
 
 ## Troubleshooting
-
-Run:
 
 ```bash
 npc doctor
@@ -185,20 +230,12 @@ systemctl status nginx
 journalctl -u nginx
 ```
 
-Check DNS before HTTP-01 or TLS-ALPN-01 issuance. Port 80 must be reachable for HTTP-01 and port 443 for HTTPS traffic. DNS-01 does not require inbound validation ports.
+For HTTP-01, DNS must point at the host and port 80 must be reachable. For public HTTPS traffic, port 443 must be reachable. DNS-01 does not require inbound validation ports, but provider secrets must be protected.
 
-## Update
-
-```bash
-sudo npc upgrade
-```
-
-Self-upgrade is scaffolded around GitHub Releases, platform artifacts, and SHA256 verification. Configure `repoOwner` and `repoName` at build time.
-
-## Deinstallation
+## Uninstall
 
 ```bash
 sudo npc uninstall --force
 ```
 
-The MVP removes the binary only. Review `/etc/npc`, managed Nginx configs, certificates, backups, and Nginx itself manually before deleting them.
+The current MVP removes the binary. Review `/etc/npc`, managed Nginx configs, certificates, backups, and Nginx itself before deleting them.

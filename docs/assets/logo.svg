@@ -1,0 +1,20 @@
+<svg width="960" height="320" viewBox="0 0 960 320" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">npc logo</title>
+  <desc id="desc">Nginx Proxy Configurator logo with terminal prompt and reverse proxy routes.</desc>
+  <rect width="960" height="320" rx="32" fill="#0B1117"/>
+  <rect x="40" y="40" width="880" height="240" rx="24" fill="#111A22" stroke="#263442" stroke-width="2"/>
+  <circle cx="80" cy="78" r="8" fill="#FF5F57"/>
+  <circle cx="108" cy="78" r="8" fill="#FFBD2E"/>
+  <circle cx="136" cy="78" r="8" fill="#28C840"/>
+  <path d="M93 151L129 181L93 211" stroke="#A7F3D0" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M158 215H246" stroke="#A7F3D0" stroke-width="14" stroke-linecap="round"/>
+  <text x="292" y="190" fill="#F8FAFC" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="88" font-weight="800" letter-spacing="0">npc</text>
+  <text x="300" y="224" fill="#94A3B8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="24" font-weight="500">Nginx Proxy Configurator</text>
+  <path d="M560 160H634" stroke="#38BDF8" stroke-width="10" stroke-linecap="round"/>
+  <path d="M634 160C666 160 666 116 700 116H760" stroke="#38BDF8" stroke-width="10" stroke-linecap="round"/>
+  <path d="M634 160C666 160 666 204 700 204H760" stroke="#38BDF8" stroke-width="10" stroke-linecap="round"/>
+  <rect x="760" y="90" width="106" height="52" rx="12" fill="#182532" stroke="#38BDF8" stroke-width="3"/>
+  <rect x="760" y="178" width="106" height="52" rx="12" fill="#182532" stroke="#38BDF8" stroke-width="3"/>
+  <text x="786" y="124" fill="#E0F2FE" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="18" font-weight="700">TLS</text>
+  <text x="786" y="212" fill="#E0F2FE" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="18" font-weight="700">APP</text>
+</svg>
