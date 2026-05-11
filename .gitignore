@@ -1,0 +1,7 @@
+/npc
+/npc.exe
+/npc-linux-amd64
+/npc-linux-arm64
+/SHA256SUMS
+*.test
+coverage.out

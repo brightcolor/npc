@@ -1,0 +1,81 @@
+# Managed by npc
+# Do not edit manually unless you know what you are doing.
+# Hostname: {{ .Hostname }}
+
+{{- if .HasHTTP }}
+server {
+    listen 80;
+    server_name {{ .Hostname }};
+
+{{- if .ACMEWebroot }}
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+{{ end }}
+{{- if .RedirectHTTPS }}
+    location / {
+        return 301 https://$host$request_uri;
+    }
+{{- else }}
+{{ template "proxy_location" . }}
+{{- end }}
+}
+{{ end }}
+
+{{- if .SSL }}
+server {
+    listen 443 ssl{{ if .HTTP2 }} http2{{ end }};
+    server_name {{ .Hostname }};
+
+    ssl_certificate {{ .CertificatePath }};
+    ssl_certificate_key {{ .CertificateKeyPath }};
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+{{- if .HSTSEnabled }}
+    add_header Strict-Transport-Security "max-age=15552000" always;
+{{ end }}
+{{ template "proxy_location" . }}
+}
+{{ end }}
+
+{{ define "proxy_location" }}
+    client_max_body_size {{ .ClientMaxBodySize }};
+{{- if .AccessLog }}
+    access_log {{ .AccessLog }};
+{{- end }}
+{{- if .ErrorLog }}
+    error_log {{ .ErrorLog }};
+{{- end }}
+
+    location / {
+{{- if .MaintenanceEnabled }}
+        root /etc/npc/maintenance/{{ .Hostname }};
+        try_files /index.html =503;
+{{- else }}
+        proxy_pass {{ .BackendURL }};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+        proxy_connect_timeout {{ .ConnectTimeout }};
+        proxy_send_timeout {{ .SendTimeout }};
+        proxy_read_timeout {{ .ReadTimeout }};
+{{- if .WebSocket }}
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+{{- end }}
+{{- if eq .SecurityHeaders "standard" }}
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
+{{- end }}
+{{- end }}
+    }
+{{ end }}
