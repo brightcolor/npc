@@ -28,6 +28,22 @@ func TestRenderHTTPOnly(t *testing.T) {
 	}
 }
 
+func TestRenderForwardedHeaders(t *testing.T) {
+	out, err := RenderSite(baseSite())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"proxy_set_header Host $host;",
+		"proxy_set_header X-Forwarded-Proto $scheme;",
+		"proxy_set_header X-Forwarded-Host $host;",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing proxy header %q in:\n%s", want, out)
+		}
+	}
+}
+
 func TestRenderWebSocketAndSSL(t *testing.T) {
 	site := baseSite()
 	site.SSL = true
