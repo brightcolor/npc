@@ -99,15 +99,17 @@ func InstallApt(assumeYes bool) error {
 	if !assumeYes {
 		return errors.New("apt update/install requires explicit confirmation; rerun with --force")
 	}
-	if _, err := system.Run("apt-get", "update"); err != nil {
-		return err
+	if res, err := system.Run("apt-get", "update"); err != nil {
+		return errors.New("apt-get update failed: " + res.Output)
 	}
-	if _, err := system.Run("apt-get", "install", "-y", "nginx"); err != nil {
-		return err
+	if res, err := system.Run("apt-get", "install", "-y", "nginx"); err != nil {
+		return errors.New("apt-get install nginx failed: " + res.Output)
 	}
 	_, _ = system.Run("systemctl", "enable", "nginx")
-	_, err := system.Run("systemctl", "start", "nginx")
-	return err
+	if res, err := system.Run("systemctl", "start", "nginx"); err != nil {
+		return errors.New("systemctl start nginx failed: " + res.Output)
+	}
+	return nil
 }
 
 func Timestamp() string {

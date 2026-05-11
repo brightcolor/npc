@@ -149,7 +149,7 @@ func ensureRuntimeDependencies(o createOptions) error {
 		}
 		fmt.Println("Installing Nginx...")
 		if err := nginx.InstallApt(true); err != nil {
-			return err
+			return fmt.Errorf("nginx installation failed: %w", err)
 		}
 	}
 	if o.acme && !acme.Installed() {
@@ -165,7 +165,7 @@ func ensureRuntimeDependencies(o createOptions) error {
 		}
 		fmt.Println("Installing acme.sh...")
 		if err := acme.Install(o.email); err != nil {
-			return err
+			return fmt.Errorf("acme.sh installation failed: %w", err)
 		}
 	}
 	return nil

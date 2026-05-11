@@ -72,11 +72,11 @@ func newTerminalUI() terminalUI {
 
 func (ui terminalUI) header() {
 	fmt.Print("\033[2J\033[H")
-	fmt.Println(cyan("+------------------------------------------------------------------------+"))
-	fmt.Println(cyan("|") + " " + bold("npc") + "  Nginx Proxy Configurator" + strings.Repeat(" ", 39) + cyan("|"))
-	fmt.Println(cyan("|") + " " + dim("Reverse proxies, TLS, Docker discovery, and safe Nginx reloads") + "      " + cyan("|"))
-	fmt.Println(cyan("+------------------------------------------------------------------------+"))
-	fmt.Println(dim("Backups before writes. nginx -t before reloads. Manual configs stay untouched."))
+	fmt.Println(cyan("+------------------------------------------------------------------------------+"))
+	fmt.Println(cyan("|") + " " + bold("npc") + "  Nginx Proxy Configurator" + strings.Repeat(" ", 45) + cyan("|"))
+	fmt.Println(cyan("|") + " " + dim("Reverse proxies, TLS, Docker discovery, and safe Nginx reloads") + strings.Repeat(" ", 12) + cyan("|"))
+	fmt.Println(cyan("+------------------------------------------------------------------------------+"))
+	fmt.Printf("  %s  %s  %s\n", ok("SAFE DEFAULTS"), cyan("DRY RUN READY"), dim("Backups before writes. nginx -t before reloads."))
 	fmt.Println()
 }
 
@@ -88,16 +88,16 @@ func (ui terminalUI) dashboard() {
 			active++
 		}
 	}
-	fmt.Println(bold("Overview"))
-	fmt.Println(cyan(strings.Repeat("-", 72)))
-	fmt.Printf("  %-14s %s     %-14s %s\n", "Nginx", badge(system.Exists("nginx")), "Service", badge(nginx.ServiceActive()))
-	fmt.Printf("  %-14s %s     %-14s %s\n", "Docker", badge(docker.Installed()), "Managed sites", fmt.Sprintf("%d active / %d total", active, len(cfg.Sites)))
-	fmt.Println(cyan(strings.Repeat("-", 72)))
+	fmt.Println(section("Control Plane"))
+	fmt.Printf("  %-16s %-14s %-16s %-14s\n", "Nginx", badge(system.Exists("nginx")), "Service", badge(nginx.ServiceActive()))
+	fmt.Printf("  %-16s %-14s %-16s %s\n", "Docker", badge(docker.Installed()), "Sites", fmt.Sprintf("%d active / %d total", active, len(cfg.Sites)))
+	fmt.Printf("  %-16s %-14s %-16s %s\n", "Config", ok("TRACKED"), "Reload guard", ok("nginx -t"))
 	if len(cfg.Sites) == 0 {
-		fmt.Println(dim("No npc-managed sites yet. Use Docker expose or custom reverse proxy to create one."))
+		fmt.Println()
+		fmt.Println(emptyState("No managed sites yet", "Expose a Docker container or create a custom reverse proxy to get started."))
 	} else {
 		fmt.Println()
-		fmt.Println(bold("Managed sites"))
+		fmt.Println(section("Managed Sites"))
 		for _, site := range cfg.SortedSites() {
 			enabled := fail("disabled")
 			if _, err := os.Lstat(site.EnabledPath); err == nil {
@@ -115,13 +115,14 @@ func (ui terminalUI) exposeDocker() error {
 	}
 	fmt.Println(section("Docker Discovery"))
 	fmt.Println(dim("Scanning running containers. Docker containers and Compose files will not be modified."))
+	fmt.Println(dim("Published ports become 127.0.0.1:<host-port>; container-only ports are marked before use."))
 	fmt.Println()
 	containers, err := docker.RunningContainers()
 	if err != nil {
 		return err
 	}
 	if len(containers) == 0 {
-		fmt.Println(warn("No running Docker containers found."))
+		fmt.Println(emptyState("No running Docker containers", "Start a container or use the custom reverse proxy flow."))
 		return nil
 	}
 	labels := make([]string, 0, len(containers))
@@ -130,7 +131,7 @@ func (ui terminalUI) exposeDocker() error {
 		if c.PortsRaw != "" {
 			ports = c.PortsRaw
 		}
-		labels = append(labels, fmt.Sprintf("%-28s %s", c.Name, dim(c.Image+" | "+ports)))
+		labels = append(labels, fmt.Sprintf("%-28s %s %s", c.Name, cyan("container"), dim(c.Image+" | "+ports)))
 	}
 	container := containers[ui.menu("Select a container to expose", labels)]
 	if len(container.Ports) == 0 {
@@ -186,12 +187,14 @@ func (ui terminalUI) previewAndRun(o createOptions) error {
 		return err
 	}
 	fmt.Println()
-	fmt.Println(panel("Review",
+	fmt.Println(panel("Reverse Proxy Review",
 		"Hostname: "+site.Hostname,
 		"Backend:  "+site.BackendURL(),
+		"Profile:  "+site.Profile,
 		"Config:   "+site.ConfigPath,
 		"Enabled:  "+site.EnabledPath,
 		"SSL:      "+yesNo(site.SSL),
+		"Logs:     "+yesNo(site.AccessLog != "" || site.ErrorLog != ""),
 	))
 	fmt.Println()
 	if ui.confirm("Show rendered Nginx config?", false) {
@@ -202,7 +205,10 @@ func (ui terminalUI) previewAndRun(o createOptions) error {
 		fmt.Println("No changes were made.")
 		return nil
 	}
-	return executeCreate(o)
+	if err := executeCreate(o); err != nil {
+		return fmt.Errorf("could not create reverse proxy: %w", err)
+	}
+	return nil
 }
 
 func (ui terminalUI) actionMenu(title string, options []menuOption) int {
@@ -307,7 +313,7 @@ func panel(title string, lines ...string) string {
 }
 
 func section(title string) string {
-	return bold(title) + "\n" + cyan(strings.Repeat("-", len(title)+8))
+	return bold(title) + "\n" + cyan(strings.Repeat("-", 78))
 }
 
 func yesNo(v bool) string {
@@ -319,9 +325,13 @@ func yesNo(v bool) string {
 
 func badge(v bool) string {
 	if v {
-		return ok("READY")
+		return ok("[ready]")
 	}
-	return fail("MISSING")
+	return fail("[missing]")
+}
+
+func emptyState(title, body string) string {
+	return warn(title) + "\n  " + dim(body)
 }
 
 func ok(s string) string   { return "\033[32m" + s + "\033[0m" }

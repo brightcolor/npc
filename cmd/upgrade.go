@@ -22,9 +22,10 @@ func runUpgrade(cmd *cobra.Command, args []string) error {
 
 func runUpgradeVersion(version string) error {
 	result, err := updater.Upgrade(updater.Options{
-		RepoOwner: app.build.RepoOwner,
-		RepoName:  app.build.RepoName,
-		Version:   version,
+		RepoOwner:      app.build.RepoOwner,
+		RepoName:       app.build.RepoName,
+		Version:        version,
+		CurrentVersion: app.build.Version,
 	})
 	if err != nil {
 		return fmt.Errorf("upgrade failed: %w", err)
@@ -32,6 +33,6 @@ func runUpgradeVersion(version string) error {
 	if app.jsonOut {
 		return writeJSON(result)
 	}
-	fmt.Printf("Upgraded npc using %s\nTarget: %s\nBackup: %s\n", result.Artifact, result.Target, result.Backup)
+	fmt.Printf("Upgraded npc from %s to %s\nArtifact: %s\nTarget: %s\nBackup: %s\n", result.FromVersion, result.ToVersion, result.Artifact, result.Target, result.Backup)
 	return nil
 }

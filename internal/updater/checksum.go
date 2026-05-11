@@ -3,6 +3,7 @@ package updater
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,16 +18,18 @@ import (
 )
 
 type Options struct {
-	RepoOwner string
-	RepoName  string
-	Version   string
+	RepoOwner      string
+	RepoName       string
+	Version        string
+	CurrentVersion string
 }
 
 type Result struct {
-	Version  string `json:"version"`
-	Artifact string `json:"artifact"`
-	Target   string `json:"target"`
-	Backup   string `json:"backup,omitempty"`
+	FromVersion string `json:"from_version"`
+	ToVersion   string `json:"to_version"`
+	Artifact    string `json:"artifact"`
+	Target      string `json:"target"`
+	Backup      string `json:"backup,omitempty"`
 }
 
 func SHA256File(path string) (string, error) {
@@ -92,6 +95,14 @@ func Upgrade(opts Options) (*Result, error) {
 	if version == "" {
 		version = "latest"
 	}
+	toVersion := version
+	if version == "latest" {
+		latest, err := latestReleaseTag(opts.RepoOwner, opts.RepoName)
+		if err != nil {
+			return nil, err
+		}
+		toVersion = latest
+	}
 	base := releaseDownloadBase(opts.RepoOwner, opts.RepoName, version)
 	dir, err := os.MkdirTemp("", "npc-upgrade-*")
 	if err != nil {
@@ -125,7 +136,7 @@ func Upgrade(opts Options) (*Result, error) {
 		_ = os.Rename(backup, target)
 		return nil, err
 	}
-	return &Result{Version: version, Artifact: artifact, Target: target, Backup: backup}, nil
+	return &Result{FromVersion: opts.CurrentVersion, ToVersion: toVersion, Artifact: artifact, Target: target, Backup: backup}, nil
 }
 
 func releaseDownloadBase(owner, repo, version string) string {
@@ -153,6 +164,28 @@ func downloadFile(url, path string, mode os.FileMode) error {
 		return err
 	}
 	return out.Chmod(mode)
+}
+
+func latestReleaseTag(owner, repo string) (string, error) {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", owner, repo)
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return "", fmt.Errorf("failed to resolve latest release: HTTP %d", resp.StatusCode)
+	}
+	var payload struct {
+		TagName string `json:"tag_name"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		return "", err
+	}
+	if payload.TagName == "" {
+		return "", fmt.Errorf("latest release response did not include tag_name")
+	}
+	return payload.TagName, nil
 }
 
 func copyFile(src, dst string, mode os.FileMode) error {

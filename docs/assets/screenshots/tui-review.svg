@@ -1,0 +1,24 @@
+<svg width="1100" height="660" viewBox="0 0 1100 660" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">npc reverse proxy review screen</title>
+  <desc id="desc">Screenshot-style SVG of the npc reverse proxy review screen before writing Nginx config.</desc>
+  <rect width="1100" height="660" rx="24" fill="#080D12"/>
+  <rect x="34" y="34" width="1032" height="592" rx="18" fill="#0E1620" stroke="#263544" stroke-width="2"/>
+  <circle cx="72" cy="68" r="7" fill="#FF5F57"/>
+  <circle cx="96" cy="68" r="7" fill="#FFBD2E"/>
+  <circle cx="120" cy="68" r="7" fill="#28C840"/>
+  <text x="64" y="122" fill="#F8FAFC" font-family="Consolas, Menlo, monospace" font-size="24" font-weight="700">Docker Discovery</text>
+  <text x="64" y="154" fill="#38BDF8" font-family="Consolas, Menlo, monospace" font-size="20">------------------------------------------------------------------------------</text>
+  <text x="92" y="194" fill="#94A3B8" font-family="Consolas, Menlo, monospace" font-size="20">Scanning running containers. Docker containers and Compose files will not be modified.</text>
+  <text x="92" y="226" fill="#94A3B8" font-family="Consolas, Menlo, monospace" font-size="20">Published ports become 127.0.0.1:&lt;host-port&gt;; container-only ports are marked before use.</text>
+  <text x="64" y="286" fill="#38BDF8" font-family="Consolas, Menlo, monospace" font-size="22">+---------------------------------------------------------------------+</text>
+  <text x="64" y="318" fill="#38BDF8" font-family="Consolas, Menlo, monospace" font-size="22">|</text>
+  <text x="92" y="318" fill="#F8FAFC" font-family="Consolas, Menlo, monospace" font-size="22" font-weight="700">Reverse Proxy Review</text>
+  <text x="898" y="318" fill="#38BDF8" font-family="Consolas, Menlo, monospace" font-size="22">|</text>
+  <text x="64" y="350" fill="#38BDF8" font-family="Consolas, Menlo, monospace" font-size="22">+---------------------------------------------------------------------+</text>
+  <text x="92" y="390" fill="#CBD5E1" font-family="Consolas, Menlo, monospace" font-size="22">Hostname: app.example.com</text>
+  <text x="92" y="430" fill="#CBD5E1" font-family="Consolas, Menlo, monospace" font-size="22">Backend:  http://127.0.0.1:8080</text>
+  <text x="92" y="470" fill="#CBD5E1" font-family="Consolas, Menlo, monospace" font-size="22">Profile:  docker</text>
+  <text x="92" y="510" fill="#CBD5E1" font-family="Consolas, Menlo, monospace" font-size="22">Config:   /etc/nginx/sites-available/app.example.com.conf</text>
+  <text x="92" y="550" fill="#CBD5E1" font-family="Consolas, Menlo, monospace" font-size="22">SSL:      yes</text>
+  <text x="92" y="600" fill="#22C55E" font-family="Consolas, Menlo, monospace" font-size="22">Create this reverse proxy now? [Y/n]:</text>
+</svg>

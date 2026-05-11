@@ -36,9 +36,10 @@ func Execute(info BuildInfo) {
 
 func newRootCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "npc",
-		Short: "Nginx Proxy Configurator",
-		Long:  "npc installs, configures, manages, tests, and updates Nginx reverse proxy sites.",
+		Use:          "npc",
+		Short:        "Nginx Proxy Configurator",
+		Long:         "npc installs, configures, manages, tests, and updates Nginx reverse proxy sites.",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if v, _ := cmd.Flags().GetBool("version"); v {
 				printVersion()

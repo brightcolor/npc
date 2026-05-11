@@ -8,6 +8,12 @@
 
 It is built for administrators who want repeatable reverse proxy setup with safer defaults: backups before writes, `nginx -t` before reloads, explicit metadata, dry runs, and clear failure messages. This project started from a generated broad spec, so early releases should still be reviewed carefully before production rollout.
 
+## Screenshots
+
+![npc terminal dashboard](docs/assets/screenshots/tui-dashboard.svg)
+
+![npc reverse proxy review](docs/assets/screenshots/tui-review.svg)
+
 ## Status
 
 `v0.1.x` is the first MVP line. It includes the CLI structure, terminal UI, Docker discovery, HTTP reverse proxy generation, manual certificate config, acme.sh scaffolding, backups, metadata, release builds, and tests. Some advanced flows are intentionally conservative and will mature over later releases.
@@ -186,7 +192,7 @@ By default it uses the latest release and selects the asset for the current plat
 - `npc-linux-amd64`
 - `npc-linux-arm64`
 
-The upgrade flow downloads the binary and `SHA256SUMS`, verifies the checksum, backs up the current binary as `<target>.bak.<timestamp>`, writes the new binary, and replaces the old one atomically. If replacing the binary fails, `npc` tries to roll back to the backup.
+The upgrade flow downloads the binary and `SHA256SUMS`, verifies the checksum, backs up the current binary as `<target>.bak.<timestamp>`, writes the new binary, and replaces the old one atomically. If replacing the binary fails, `npc` tries to roll back to the backup. On success, it prints the source and target versions, for example `Upgraded npc from v0.1.5 to v0.1.6`.
 
 Install a specific release:
 

@@ -1,0 +1,42 @@
+<svg width="1100" height="720" viewBox="0 0 1100 720" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">npc terminal UI dashboard</title>
+  <desc id="desc">Screenshot-style SVG of the npc terminal dashboard with status badges and action cards.</desc>
+  <rect width="1100" height="720" rx="24" fill="#080D12"/>
+  <rect x="34" y="34" width="1032" height="652" rx="18" fill="#0E1620" stroke="#263544" stroke-width="2"/>
+  <circle cx="72" cy="68" r="7" fill="#FF5F57"/>
+  <circle cx="96" cy="68" r="7" fill="#FFBD2E"/>
+  <circle cx="120" cy="68" r="7" fill="#28C840"/>
+  <text x="64" y="122" fill="#38BDF8" font-family="Consolas, Menlo, monospace" font-size="22">+------------------------------------------------------------------------------+</text>
+  <text x="64" y="154" fill="#38BDF8" font-family="Consolas, Menlo, monospace" font-size="22">|</text>
+  <text x="92" y="154" fill="#F8FAFC" font-family="Consolas, Menlo, monospace" font-size="22" font-weight="700">npc</text>
+  <text x="154" y="154" fill="#E2E8F0" font-family="Consolas, Menlo, monospace" font-size="22">Nginx Proxy Configurator</text>
+  <text x="998" y="154" fill="#38BDF8" font-family="Consolas, Menlo, monospace" font-size="22">|</text>
+  <text x="64" y="186" fill="#38BDF8" font-family="Consolas, Menlo, monospace" font-size="22">|</text>
+  <text x="92" y="186" fill="#94A3B8" font-family="Consolas, Menlo, monospace" font-size="22">Reverse proxies, TLS, Docker discovery, and safe Nginx reloads</text>
+  <text x="998" y="186" fill="#38BDF8" font-family="Consolas, Menlo, monospace" font-size="22">|</text>
+  <text x="64" y="218" fill="#38BDF8" font-family="Consolas, Menlo, monospace" font-size="22">+------------------------------------------------------------------------------+</text>
+  <text x="92" y="256" fill="#22C55E" font-family="Consolas, Menlo, monospace" font-size="20">SAFE DEFAULTS</text>
+  <text x="264" y="256" fill="#38BDF8" font-family="Consolas, Menlo, monospace" font-size="20">DRY RUN READY</text>
+  <text x="462" y="256" fill="#94A3B8" font-family="Consolas, Menlo, monospace" font-size="20">Backups before writes. nginx -t before reloads.</text>
+  <text x="64" y="316" fill="#F8FAFC" font-family="Consolas, Menlo, monospace" font-size="23" font-weight="700">Control Plane</text>
+  <text x="64" y="348" fill="#38BDF8" font-family="Consolas, Menlo, monospace" font-size="20">------------------------------------------------------------------------------</text>
+  <text x="94" y="388" fill="#CBD5E1" font-family="Consolas, Menlo, monospace" font-size="22">Nginx</text>
+  <text x="280" y="388" fill="#EF4444" font-family="Consolas, Menlo, monospace" font-size="22">[missing]</text>
+  <text x="500" y="388" fill="#CBD5E1" font-family="Consolas, Menlo, monospace" font-size="22">Service</text>
+  <text x="700" y="388" fill="#EF4444" font-family="Consolas, Menlo, monospace" font-size="22">[missing]</text>
+  <text x="94" y="428" fill="#CBD5E1" font-family="Consolas, Menlo, monospace" font-size="22">Docker</text>
+  <text x="280" y="428" fill="#22C55E" font-family="Consolas, Menlo, monospace" font-size="22">[ready]</text>
+  <text x="500" y="428" fill="#CBD5E1" font-family="Consolas, Menlo, monospace" font-size="22">Sites</text>
+  <text x="700" y="428" fill="#E2E8F0" font-family="Consolas, Menlo, monospace" font-size="22">0 active / 0 total</text>
+  <text x="94" y="468" fill="#CBD5E1" font-family="Consolas, Menlo, monospace" font-size="22">Config</text>
+  <text x="280" y="468" fill="#22C55E" font-family="Consolas, Menlo, monospace" font-size="22">TRACKED</text>
+  <text x="500" y="468" fill="#CBD5E1" font-family="Consolas, Menlo, monospace" font-size="22">Reload guard</text>
+  <text x="700" y="468" fill="#22C55E" font-family="Consolas, Menlo, monospace" font-size="22">nginx -t</text>
+  <text x="64" y="514" fill="#F8FAFC" font-family="Consolas, Menlo, monospace" font-size="23" font-weight="700">Choose an action</text>
+  <text x="64" y="546" fill="#38BDF8" font-family="Consolas, Menlo, monospace" font-size="20">------------------------------------------------------------------------------</text>
+  <text x="94" y="586" fill="#38BDF8" font-family="Consolas, Menlo, monospace" font-size="22">[1]</text>
+  <text x="150" y="586" fill="#F8FAFC" font-family="Consolas, Menlo, monospace" font-size="22" font-weight="700">Expose a Docker container</text>
+  <text x="150" y="616" fill="#94A3B8" font-family="Consolas, Menlo, monospace" font-size="20">Scan running containers and publish one through Nginx</text>
+  <text x="94" y="656" fill="#38BDF8" font-family="Consolas, Menlo, monospace" font-size="22">[2]</text>
+  <text x="150" y="656" fill="#F8FAFC" font-family="Consolas, Menlo, monospace" font-size="22" font-weight="700">Create a custom reverse proxy</text>
+</svg>

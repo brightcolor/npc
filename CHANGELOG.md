@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.6 - 2026-05-11
+
+- Added README screenshots for the terminal dashboard and reverse proxy review screen.
+- Improved terminal UI styling with stronger control-plane status, safer empty states, and richer review details.
+- Suppressed Cobra usage output for runtime errors so operational failures stay readable.
+- Improved create-flow error messages for failed Nginx and acme.sh installation attempts.
+- Improved `npc upgrade` output to report the previous and target versions.
+
 ## 0.1.5 - 2026-05-11
 
 - Refined the terminal UI with a stronger header, status badges, action cards, and clearer section styling.
