@@ -74,6 +74,10 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	} else if missing := missingCreateFields(o); len(missing) > 0 {
 		return validationError{fmt.Errorf("missing required fields: %s", strings.Join(missing, ", "))}
 	}
+	return executeCreate(o)
+}
+
+func executeCreate(o createOptions) error {
 	site, err := buildSite(o)
 	if err != nil {
 		return validationError{err}

@@ -50,7 +50,7 @@ func newRootCommand() *cobra.Command {
 			if upgrade, _ := cmd.Flags().GetBool("upgrade"); upgrade {
 				return runUpgrade(cmd, args)
 			}
-			return runCreate(cmd, args)
+			return runTUI(cmd, args)
 		},
 	}
 	cmd.PersistentFlags().BoolVar(&app.jsonOut, "json", false, "print machine-readable JSON where supported")
@@ -61,7 +61,7 @@ func newRootCommand() *cobra.Command {
 	cmd.AddCommand(createCommand(), listCommand(), statusCommand(), showCommand(), editCommand())
 	cmd.AddCommand(enableCommand(), disableCommand(), deleteCommand(), testCommand(), reloadCommand(), restartCommand())
 	cmd.AddCommand(installNginxCommand(), backupCommand(), restoreCommand(), certsCommand(), doctorCommand(), logsCommand())
-	cmd.AddCommand(upgradeCommand(), uninstallCommand(), maintenanceCommand(), checkCommand(), exportCommand(), importCommand(), dockerCommand())
+	cmd.AddCommand(upgradeCommand(), uninstallCommand(), maintenanceCommand(), checkCommand(), exportCommand(), importCommand(), dockerCommand(), tuiCommand())
 	return cmd
 }
 

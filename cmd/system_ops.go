@@ -7,6 +7,7 @@ import (
 
 	"github.com/brightcolor/npc/internal/backup"
 	"github.com/brightcolor/npc/internal/config"
+	dockerapi "github.com/brightcolor/npc/internal/docker"
 	"github.com/brightcolor/npc/internal/installer"
 	"github.com/brightcolor/npc/internal/nginx"
 	"github.com/brightcolor/npc/internal/paths"
@@ -131,11 +132,19 @@ func importCommand() *cobra.Command {
 
 func dockerCommand() *cobra.Command {
 	return &cobra.Command{Use: "docker", Short: "Show Docker containers and ports", RunE: func(cmd *cobra.Command, args []string) error {
-		if !system.Exists("docker") {
+		if !dockerapi.Installed() {
 			return validationError{fmt.Errorf("docker was not found")}
 		}
-		res, err := system.Run("docker", "ps", "--format", "table {{.Names}}\t{{.Ports}}\t{{.Networks}}")
-		fmt.Println(res.Output)
-		return err
+		containers, err := dockerapi.RunningContainers()
+		if err != nil {
+			return err
+		}
+		if app.jsonOut {
+			return writeJSON(containers)
+		}
+		for _, container := range containers {
+			fmt.Printf("%s\t%s\t%s\t%s\n", container.Name, container.Image, container.PortsRaw, container.Networks)
+		}
+		return nil
 	}}
 }

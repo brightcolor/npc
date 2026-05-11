@@ -33,6 +33,14 @@ sudo ./npc --install
 
 ## Quick Start
 
+Start the terminal UI:
+
+```bash
+npc
+```
+
+The UI can scan running Docker containers, list their available ports, and create a reverse proxy for the selected container. Published Docker ports are exposed through `127.0.0.1:<host-port>`. Container-only ports are offered with a warning because host Nginx must be able to reach the container name through networking.
+
 Create a local reverse proxy interactively:
 
 ```bash
@@ -93,6 +101,12 @@ sudo npc create \
 
 ```bash
 npc docker
+npc
+```
+
+Inside the UI, choose **Expose a Docker container**, select a running container, select one of its ports, enter the public hostname, review the generated Nginx config, and confirm.
+
+The direct non-interactive equivalent is:
 
 sudo npc create \
   --hostname app.example.com \
@@ -175,6 +189,8 @@ sudo npc create \
 ## Commands
 
 ```bash
+npc
+npc tui
 npc list
 npc status
 npc show app.example.com
@@ -186,6 +202,7 @@ npc certs
 npc doctor
 sudo npc backup
 npc restore
+npc docker
 ```
 
 ## Managed Files
@@ -218,6 +235,7 @@ Every generated Nginx config starts with:
 - `npc create` checks for Nginx before writing and asks before installing it.
 - `npc create --acme` checks for `acme.sh` before writing and asks before installing it.
 - `--non-interactive` never prompts; missing dependencies fail cleanly unless `--force` is set.
+- The Docker UI does not modify Docker containers or Compose files. It only uses container/port information to generate Nginx reverse proxy config.
 - Existing manual Nginx configs are not overwritten by default.
 - Reload and restart paths run `nginx -t` first.
 - `--dry-run` shows planned files and rendered config.

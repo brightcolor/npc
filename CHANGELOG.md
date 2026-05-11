@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.2 - 2026-05-11
+
+- Added `npc tui` and made bare `npc` open the terminal UI.
+- Added Docker container discovery in the UI.
+- Added selectable Docker port exposure flow with generated reverse proxy preview.
+- Improved `npc docker` with structured Docker parsing and JSON output support.
+- Documented the Docker expose UI in the README.
+
 ## 0.1.1 - 2026-05-11
 
 - Added dependency checks during `npc create`.
