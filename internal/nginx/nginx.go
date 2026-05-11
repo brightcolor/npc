@@ -55,6 +55,20 @@ func ServiceActive() bool {
 	return err == nil && strings.TrimSpace(res.Output) == "active"
 }
 
+func EnsureServiceRunning() error {
+	if ServiceActive() {
+		return nil
+	}
+	if out, err := Test(); err != nil {
+		return errors.New("nginx is not active and nginx -t failed, not starting service: " + out)
+	}
+	_, _ = system.Run("systemctl", "enable", "nginx")
+	if res, err := system.Run("systemctl", "start", "nginx"); err != nil {
+		return errors.New("nginx is installed but not active, and systemctl start nginx failed: " + res.Output)
+	}
+	return nil
+}
+
 func WriteSite(path, content string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err

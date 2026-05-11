@@ -120,12 +120,13 @@ npc create \
 
 1. You describe a public hostname and a backend.
 2. `npc` validates the input and checks local dependencies.
-3. It renders an Nginx server config from an embedded template.
-4. It writes the config to `/etc/nginx/sites-available/<hostname>.conf`.
-5. It enables the site with a symlink in `/etc/nginx/sites-enabled/`.
-6. It runs `nginx -t`.
-7. It reloads Nginx only when the config test succeeds.
-8. It stores site metadata in `/etc/npc/config.yaml`.
+3. It checks whether the Nginx service is active and starts it when needed.
+4. It renders an Nginx server config from an embedded template.
+5. It writes the config to `/etc/nginx/sites-available/<hostname>.conf`.
+6. It enables the site with a symlink in `/etc/nginx/sites-enabled/`.
+7. It runs `nginx -t`.
+8. It reloads Nginx only when the config test succeeds.
+9. It stores site metadata in `/etc/npc/config.yaml`.
 
 The generated Nginx config is a normal reverse proxy. Public traffic reaches Nginx on port 80 or 443, Nginx forwards the request to the backend service, and the backend receives standard proxy headers such as `X-Forwarded-For`, `X-Forwarded-Proto`, and `X-Real-IP`.
 

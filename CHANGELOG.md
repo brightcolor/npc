@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.9 - 2026-05-11
+
+- Added Nginx service active check before write/reload flows.
+- Added automatic `systemctl start nginx` attempt when Nginx is installed but inactive.
+- Added Nginx service active check before HTTP-01 challenge reload.
+- Documented the service-active check in the README.
+
 ## 0.1.8 - 2026-05-11
 
 - Changed `npc upgrade` to skip downloads and replacement when the installed version already matches the target release.

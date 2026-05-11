@@ -95,6 +95,9 @@ func executeCreate(o createOptions) error {
 	if err := ensureRuntimeDependencies(o); err != nil {
 		return err
 	}
+	if err := nginx.EnsureServiceRunning(); err != nil {
+		return err
+	}
 	cfg, err := config.Load("")
 	if err != nil {
 		return err
@@ -198,6 +201,9 @@ func prepareHTTP01Certificate(site *config.Site) error {
 		return err
 	}
 	if err := nginx.Enable(site.ConfigPath, site.EnabledPath); err != nil {
+		return err
+	}
+	if err := nginx.EnsureServiceRunning(); err != nil {
 		return err
 	}
 	if out, err := nginx.Reload(); err != nil {
