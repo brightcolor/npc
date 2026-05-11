@@ -41,7 +41,7 @@ npc
 
 The UI can scan running Docker containers, list their available ports, and create a reverse proxy for the selected container. Published Docker ports are exposed through `127.0.0.1:<host-port>`. Container-only ports are offered with a warning because host Nginx must be able to reach the container name through networking.
 
-The UI also shows a small dashboard with Nginx, Docker, and managed-site status before each action. If no sites exist yet, `npc list` and the UI show an empty-state message instead of returning a blank table.
+The UI shows a dashboard with Nginx, Docker, and managed-site status before each action. It uses status badges, action cards, and a review screen before writing anything. If no sites exist yet, `npc list` and the UI show an empty-state message instead of returning a blank table.
 
 Create a local reverse proxy interactively:
 

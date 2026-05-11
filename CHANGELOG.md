@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5 - 2026-05-11
+
+- Refined the terminal UI with a stronger header, status badges, action cards, and clearer section styling.
+- Improved the Docker discovery screen and reverse proxy review screen.
+- Updated README wording to describe the polished terminal UI behavior.
+
 ## 0.1.4 - 2026-05-11
 
 - Improved `npc list` empty-state output when no sites are managed yet.

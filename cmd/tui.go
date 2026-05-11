@@ -21,15 +21,15 @@ func tuiCommand() *cobra.Command {
 
 func runTUI(cmd *cobra.Command, args []string) error {
 	ui := newTerminalUI()
-	ui.header()
 	for {
+		ui.header()
 		ui.dashboard()
-		choice := ui.menu("What do you want to do?", []string{
-			"Expose a Docker container",
-			"Create a custom reverse proxy",
-			"List managed sites",
-			"Show status",
-			"Quit",
+		choice := ui.actionMenu("Choose an action", []menuOption{
+			{Title: "Expose a Docker container", Desc: "Scan running containers and publish one through Nginx"},
+			{Title: "Create a custom reverse proxy", Desc: "Enter hostname, backend, TLS, logs, and proxy options manually"},
+			{Title: "List managed sites", Desc: "Show sites tracked in /etc/npc/config.yaml"},
+			{Title: "Show system status", Desc: "Print Nginx, paths, and managed-site counters"},
+			{Title: "Quit", Desc: "Leave the terminal UI"},
 		})
 		switch choice {
 		case 0:
@@ -61,14 +61,22 @@ type terminalUI struct {
 	reader *bufio.Reader
 }
 
+type menuOption struct {
+	Title string
+	Desc  string
+}
+
 func newTerminalUI() terminalUI {
 	return terminalUI{reader: bufio.NewReader(os.Stdin)}
 }
 
 func (ui terminalUI) header() {
-	fmt.Println(cyan("npc") + " " + bold("Nginx Proxy Configurator"))
-	fmt.Println(dim("Secure reverse proxies from your terminal."))
-	fmt.Println(dim("Backups before writes. nginx -t before reloads."))
+	fmt.Print("\033[2J\033[H")
+	fmt.Println(cyan("+------------------------------------------------------------------------+"))
+	fmt.Println(cyan("|") + " " + bold("npc") + "  Nginx Proxy Configurator" + strings.Repeat(" ", 39) + cyan("|"))
+	fmt.Println(cyan("|") + " " + dim("Reverse proxies, TLS, Docker discovery, and safe Nginx reloads") + "      " + cyan("|"))
+	fmt.Println(cyan("+------------------------------------------------------------------------+"))
+	fmt.Println(dim("Backups before writes. nginx -t before reloads. Manual configs stay untouched."))
 	fmt.Println()
 }
 
@@ -80,22 +88,22 @@ func (ui terminalUI) dashboard() {
 			active++
 		}
 	}
-	fmt.Println(panel("System",
-		fmt.Sprintf("Nginx:  %s", yesNo(system.Exists("nginx"))),
-		fmt.Sprintf("Active: %s", yesNo(nginx.ServiceActive())),
-		fmt.Sprintf("Docker: %s", yesNo(docker.Installed())),
-		fmt.Sprintf("Sites:  %d active / %d total", active, len(cfg.Sites)),
-	))
+	fmt.Println(bold("Overview"))
+	fmt.Println(cyan(strings.Repeat("-", 72)))
+	fmt.Printf("  %-14s %s     %-14s %s\n", "Nginx", badge(system.Exists("nginx")), "Service", badge(nginx.ServiceActive()))
+	fmt.Printf("  %-14s %s     %-14s %s\n", "Docker", badge(docker.Installed()), "Managed sites", fmt.Sprintf("%d active / %d total", active, len(cfg.Sites)))
+	fmt.Println(cyan(strings.Repeat("-", 72)))
 	if len(cfg.Sites) == 0 {
 		fmt.Println(dim("No npc-managed sites yet. Use Docker expose or custom reverse proxy to create one."))
 	} else {
+		fmt.Println()
 		fmt.Println(bold("Managed sites"))
 		for _, site := range cfg.SortedSites() {
-			enabled := "disabled"
+			enabled := fail("disabled")
 			if _, err := os.Lstat(site.EnabledPath); err == nil {
-				enabled = "enabled"
+				enabled = ok("enabled")
 			}
-			fmt.Printf("  %s  %s  %s\n", cyan(site.Hostname), dim(enabled), site.BackendURL())
+			fmt.Printf("  %-34s %-18s %s\n", cyan(site.Hostname), enabled, dim(site.BackendURL()))
 		}
 	}
 	fmt.Println()
@@ -105,7 +113,7 @@ func (ui terminalUI) exposeDocker() error {
 	if !docker.Installed() {
 		return validationError{fmt.Errorf("docker was not found")}
 	}
-	fmt.Println(bold("Docker discovery"))
+	fmt.Println(section("Docker Discovery"))
 	fmt.Println(dim("Scanning running containers. Docker containers and Compose files will not be modified."))
 	fmt.Println()
 	containers, err := docker.RunningContainers()
@@ -122,7 +130,7 @@ func (ui terminalUI) exposeDocker() error {
 		if c.PortsRaw != "" {
 			ports = c.PortsRaw
 		}
-		labels = append(labels, fmt.Sprintf("%s  %s", c.Name, dim(c.Image+" | "+ports)))
+		labels = append(labels, fmt.Sprintf("%-28s %s", c.Name, dim(c.Image+" | "+ports)))
 	}
 	container := containers[ui.menu("Select a container to expose", labels)]
 	if len(container.Ports) == 0 {
@@ -178,7 +186,7 @@ func (ui terminalUI) previewAndRun(o createOptions) error {
 		return err
 	}
 	fmt.Println()
-	fmt.Println(panel("Planned site",
+	fmt.Println(panel("Review",
 		"Hostname: "+site.Hostname,
 		"Backend:  "+site.BackendURL(),
 		"Config:   "+site.ConfigPath,
@@ -197,13 +205,34 @@ func (ui terminalUI) previewAndRun(o createOptions) error {
 	return executeCreate(o)
 }
 
+func (ui terminalUI) actionMenu(title string, options []menuOption) int {
+	for {
+		fmt.Println(section(title))
+		for i, option := range options {
+			number := fmt.Sprintf("[%d]", i+1)
+			fmt.Printf("  %s %s\n", cyan(number), bold(option.Title))
+			fmt.Printf("      %s\n", dim(option.Desc))
+		}
+		fmt.Println()
+		fmt.Print(dim("Select an option: "))
+		text, _ := ui.reader.ReadString('\n')
+		value, err := strconv.Atoi(strings.TrimSpace(text))
+		if err == nil && value >= 1 && value <= len(options) {
+			fmt.Println()
+			return value - 1
+		}
+		fmt.Println(warn("Please enter a valid number."))
+	}
+}
+
 func (ui terminalUI) menu(title string, options []string) int {
 	for {
-		fmt.Println(bold(title))
+		fmt.Println(section(title))
 		for i, option := range options {
-			fmt.Printf("  %s) %s\n", cyan(strconv.Itoa(i+1)), option)
+			fmt.Printf("  %s %s\n", cyan(fmt.Sprintf("[%d]", i+1)), option)
 		}
-		fmt.Print(dim("Select: "))
+		fmt.Println()
+		fmt.Print(dim("Select an option: "))
 		text, _ := ui.reader.ReadString('\n')
 		value, err := strconv.Atoi(strings.TrimSpace(text))
 		if err == nil && value >= 1 && value <= len(options) {
@@ -226,7 +255,7 @@ func (ui terminalUI) askRequired(label string) string {
 
 func (ui terminalUI) askDefault(label, def string) string {
 	if def != "" {
-		fmt.Printf("%s [%s]: ", label, def)
+		fmt.Printf("%s %s ", label, dim("["+def+"]"))
 	} else {
 		fmt.Printf("%s: ", label)
 	}
@@ -277,6 +306,10 @@ func panel(title string, lines ...string) string {
 	return b.String()
 }
 
+func section(title string) string {
+	return bold(title) + "\n" + cyan(strings.Repeat("-", len(title)+8))
+}
+
 func yesNo(v bool) string {
 	if v {
 		return "yes"
@@ -284,6 +317,15 @@ func yesNo(v bool) string {
 	return "no"
 }
 
+func badge(v bool) string {
+	if v {
+		return ok("READY")
+	}
+	return fail("MISSING")
+}
+
+func ok(s string) string   { return "\033[32m" + s + "\033[0m" }
+func fail(s string) string { return "\033[31m" + s + "\033[0m" }
 func bold(s string) string { return "\033[1m" + s + "\033[0m" }
 func cyan(s string) string { return "\033[36m" + s + "\033[0m" }
 func dim(s string) string  { return "\033[2m" + s + "\033[0m" }
