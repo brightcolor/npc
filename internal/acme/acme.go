@@ -70,9 +70,9 @@ func Install(email string) error {
 	if err := out.Close(); err != nil {
 		return err
 	}
-	args := []string{installer, "--install"}
+	args := []string{installer}
 	if email != "" {
-		args = append(args, "-m", email)
+		args = append(args, "email="+email)
 	}
 	res, err := system.Run("sh", args...)
 	if err != nil {
@@ -86,7 +86,7 @@ func Install(email string) error {
 
 func searchPaths() []string {
 	home, _ := os.UserHomeDir()
-	paths := []string{
+	candidates := []string{
 		"/root/.acme.sh/acme.sh",
 		filepath.Join(os.Getenv("HOME"), ".acme.sh", "acme.sh"),
 		filepath.Join(home, ".acme.sh", "acme.sh"),
@@ -94,7 +94,16 @@ func searchPaths() []string {
 		"/usr/bin/acme.sh",
 	}
 	if matches, err := filepath.Glob("/home/*/.acme.sh/acme.sh"); err == nil {
-		paths = append(paths, matches...)
+		candidates = append(candidates, matches...)
+	}
+	seen := map[string]bool{}
+	var paths []string
+	for _, candidate := range candidates {
+		if candidate == "" || seen[candidate] {
+			continue
+		}
+		seen[candidate] = true
+		paths = append(paths, candidate)
 	}
 	sort.Strings(paths)
 	return paths

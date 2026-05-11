@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.11 - 2026-05-11
+
+- Fixed acme.sh installer invocation for the official `get.acme.sh` script.
+- Changed installer arguments from unsupported `--install`/`-m` flags to `email=<address>`.
+- Deduplicated acme.sh search paths in installation error output.
+
 ## 0.1.10 - 2026-05-11
 
 - Fixed acme.sh installer invocation to use the correct email argument.
