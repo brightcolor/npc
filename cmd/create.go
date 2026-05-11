@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"path"
@@ -12,6 +13,7 @@ import (
 	"github.com/brightcolor/npc/internal/acme"
 	"github.com/brightcolor/npc/internal/backup"
 	"github.com/brightcolor/npc/internal/config"
+	"github.com/brightcolor/npc/internal/dnscheck"
 	"github.com/brightcolor/npc/internal/nginx"
 	"github.com/brightcolor/npc/internal/paths"
 	"github.com/brightcolor/npc/internal/renderer"
@@ -184,6 +186,15 @@ func ensureRuntimeDependencies(o createOptions) error {
 }
 
 func prepareHTTP01Certificate(site *config.Site) error {
+	fmt.Println("Checking DNS for HTTP-01 validation...")
+	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+	defer cancel()
+	if result, err := dnscheck.VerifyHostnamePointsHere(ctx, site.Hostname); err != nil {
+		if result != nil {
+			return networkError{fmt.Errorf("%w", err)}
+		}
+		return networkError{err}
+	}
 	fmt.Println("Preparing HTTP-01 challenge config...")
 	if err := os.MkdirAll("/var/www/html", 0o755); err != nil {
 		return err

@@ -134,6 +134,8 @@ The generated Nginx config is a normal reverse proxy. Public traffic reaches Ngi
 
 For acme.sh HTTP-01 sites, `npc` uses a staged flow. It first writes a temporary HTTP challenge-capable config, reloads Nginx after `nginx -t`, requests the certificate, installs the certificate under `/etc/npc/certs/<hostname>/`, then writes the final HTTPS config and reloads again after another config test.
 
+Before HTTP-01 issuance, `npc` checks whether the hostname's A/AAAA records point to this server's public IP. If DNS does not match, certificate issuance is stopped because the ACME HTTP-01 challenge would fail from the public internet.
+
 `npc` does not replace Nginx. It writes managed Nginx config files and leaves Nginx in charge of serving traffic.
 
 ## Docker Flow

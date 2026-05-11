@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.12 - 2026-05-11
+
+- Added DNS preflight checks before acme.sh HTTP-01 issuance.
+- Added public server IP detection and hostname A/AAAA comparison.
+- Added network exit code handling for DNS/IP mismatch failures.
+- Documented that HTTP-01 issuance requires DNS to point to the server.
+
 ## 0.1.11 - 2026-05-11
 
 - Fixed acme.sh installer invocation for the official `get.acme.sh` script.

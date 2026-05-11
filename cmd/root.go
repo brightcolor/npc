@@ -160,6 +160,8 @@ func exitCode(err error) int {
 		return 3
 	case permissionError:
 		return 5
+	case networkError:
+		return 6
 	default:
 		return 1
 	}
@@ -168,3 +170,4 @@ func exitCode(err error) int {
 type validationError struct{ error }
 type nginxTestError struct{ error }
 type permissionError struct{ error }
+type networkError struct{ error }
