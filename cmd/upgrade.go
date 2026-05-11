@@ -33,6 +33,10 @@ func runUpgradeVersion(version string) error {
 	if app.jsonOut {
 		return writeJSON(result)
 	}
+	if !result.Changed {
+		fmt.Printf("npc is already up to date (%s)\n", result.ToVersion)
+		return nil
+	}
 	fmt.Printf("Upgraded npc from %s to %s\nArtifact: %s\nTarget: %s\nBackup: %s\n", result.FromVersion, result.ToVersion, result.Artifact, result.Target, result.Backup)
 	return nil
 }

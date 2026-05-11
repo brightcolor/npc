@@ -30,6 +30,7 @@ type Result struct {
 	Artifact    string `json:"artifact"`
 	Target      string `json:"target"`
 	Backup      string `json:"backup,omitempty"`
+	Changed     bool   `json:"changed"`
 }
 
 func SHA256File(path string) (string, error) {
@@ -103,6 +104,9 @@ func Upgrade(opts Options) (*Result, error) {
 		}
 		toVersion = latest
 	}
+	if sameVersion(opts.CurrentVersion, toVersion) {
+		return &Result{FromVersion: opts.CurrentVersion, ToVersion: toVersion, Artifact: artifact, Target: target}, nil
+	}
 	base := releaseDownloadBase(opts.RepoOwner, opts.RepoName, version)
 	dir, err := os.MkdirTemp("", "npc-upgrade-*")
 	if err != nil {
@@ -136,7 +140,7 @@ func Upgrade(opts Options) (*Result, error) {
 		_ = os.Rename(backup, target)
 		return nil, err
 	}
-	return &Result{FromVersion: opts.CurrentVersion, ToVersion: toVersion, Artifact: artifact, Target: target, Backup: backup}, nil
+	return &Result{FromVersion: opts.CurrentVersion, ToVersion: toVersion, Artifact: artifact, Target: target, Backup: backup, Changed: true}, nil
 }
 
 func releaseDownloadBase(owner, repo, version string) string {
@@ -144,6 +148,15 @@ func releaseDownloadBase(owner, repo, version string) string {
 		return fmt.Sprintf("https://github.com/%s/%s/releases/latest/download", owner, repo)
 	}
 	return fmt.Sprintf("https://github.com/%s/%s/releases/download/%s", owner, repo, version)
+}
+
+func sameVersion(current, target string) bool {
+	current = strings.TrimSpace(current)
+	target = strings.TrimSpace(target)
+	if current == "" || target == "" || current == "unknown" || current == "0.1.0-dev" {
+		return false
+	}
+	return strings.TrimPrefix(current, "v") == strings.TrimPrefix(target, "v")
 }
 
 func downloadFile(url, path string, mode os.FileMode) error {

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.8 - 2026-05-11
+
+- Changed `npc upgrade` to skip downloads and replacement when the installed version already matches the target release.
+- Added clear `npc is already up to date` output.
+- Documented no-op upgrade behavior.
+
 ## 0.1.7 - 2026-05-11
 
 - Added startup checks in the terminal UI for Nginx and `acme.sh`.

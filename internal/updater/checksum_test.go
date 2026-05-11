@@ -40,3 +40,15 @@ func TestReleaseDownloadBase(t *testing.T) {
 		t.Fatalf("unexpected version URL: %s", got)
 	}
 }
+
+func TestSameVersion(t *testing.T) {
+	if !sameVersion("v0.1.7", "0.1.7") {
+		t.Fatal("expected v-prefixed versions to match")
+	}
+	if sameVersion("v0.1.6", "v0.1.7") {
+		t.Fatal("expected different versions not to match")
+	}
+	if sameVersion("0.1.0-dev", "v0.1.7") {
+		t.Fatal("expected dev version not to match release")
+	}
+}

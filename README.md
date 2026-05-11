@@ -218,6 +218,8 @@ By default it uses the latest release and selects the asset for the current plat
 
 The upgrade flow downloads the binary and `SHA256SUMS`, verifies the checksum, backs up the current binary as `<target>.bak.<timestamp>`, writes the new binary, and replaces the old one atomically. If replacing the binary fails, `npc` tries to roll back to the backup. On success, it prints the source and target versions, for example `Upgraded npc from v0.1.5 to v0.1.6`.
 
+If the installed version already matches the selected release, `npc upgrade` exits without downloading or replacing the binary.
+
 Install a specific release:
 
 ```bash
