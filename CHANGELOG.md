@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.10 - 2026-05-11
+
+- Fixed acme.sh installer invocation to use the correct email argument.
+- Added post-install validation that finds acme.sh outside of `PATH`.
+- Added more acme.sh search paths, including `/root/.acme.sh/acme.sh`, user home paths, and common system paths.
+- Improved acme.sh installation errors so certificate issuance cannot continue after a failed or incomplete install.
+
 ## 0.1.9 - 2026-05-11
 
 - Added Nginx service active check before write/reload flows.

@@ -51,6 +51,8 @@ The UI shows a dashboard with Nginx, Docker, and managed-site status before each
 
 At startup, the UI checks for Nginx and `acme.sh`. If either tool is missing, `npc` asks whether it should install it. Nginx is installed through `apt`; `acme.sh` is installed through the official installer. Installation requires root, so start the UI with `sudo npc` when you want npc to install missing dependencies.
 
+`acme.sh` usually installs into `/root/.acme.sh/acme.sh` when `npc` runs as root. `npc` searches that location directly and does not require `acme.sh` to be available in `$PATH`.
+
 Create a local reverse proxy interactively:
 
 ```bash

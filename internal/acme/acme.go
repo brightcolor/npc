@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/brightcolor/npc/internal/system"
 )
@@ -20,11 +22,21 @@ func CommandPath() string {
 	if system.Exists("acme.sh") {
 		return "acme.sh"
 	}
+	home, _ := os.UserHomeDir()
 	candidates := []string{
 		"/root/.acme.sh/acme.sh",
 		filepath.Join(os.Getenv("HOME"), ".acme.sh", "acme.sh"),
+		filepath.Join(home, ".acme.sh", "acme.sh"),
+		"/usr/local/bin/acme.sh",
+		"/usr/bin/acme.sh",
+	}
+	if matches, err := filepath.Glob("/home/*/.acme.sh/acme.sh"); err == nil {
+		candidates = append(candidates, matches...)
 	}
 	for _, candidate := range candidates {
+		if candidate == "" || strings.Contains(candidate, "\x00") {
+			continue
+		}
 		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
 			return candidate
 		}
@@ -60,10 +72,32 @@ func Install(email string) error {
 	}
 	args := []string{installer, "--install"}
 	if email != "" {
-		args = append(args, "--accountemail", email)
+		args = append(args, "-m", email)
 	}
-	_, err = system.Run("sh", args...)
-	return err
+	res, err := system.Run("sh", args...)
+	if err != nil {
+		return fmt.Errorf("acme.sh installer failed: %s", res.Output)
+	}
+	if CommandPath() == "" {
+		return fmt.Errorf("acme.sh installer completed but acme.sh was not found; searched: %s; installer output: %s", strings.Join(searchPaths(), ", "), res.Output)
+	}
+	return nil
+}
+
+func searchPaths() []string {
+	home, _ := os.UserHomeDir()
+	paths := []string{
+		"/root/.acme.sh/acme.sh",
+		filepath.Join(os.Getenv("HOME"), ".acme.sh", "acme.sh"),
+		filepath.Join(home, ".acme.sh", "acme.sh"),
+		"/usr/local/bin/acme.sh",
+		"/usr/bin/acme.sh",
+	}
+	if matches, err := filepath.Glob("/home/*/.acme.sh/acme.sh"); err == nil {
+		paths = append(paths, matches...)
+	}
+	sort.Strings(paths)
+	return paths
 }
 
 func IssueHTTP(hostname, email string) error {
