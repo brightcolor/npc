@@ -16,3 +16,27 @@ func TestVerifyChecksum(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestArtifactName(t *testing.T) {
+	name, err := ArtifactName("linux", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if name != "npc-linux-amd64" {
+		t.Fatalf("unexpected artifact name: %s", name)
+	}
+	if _, err := ArtifactName("windows", "amd64"); err == nil {
+		t.Fatal("expected non-linux artifact to fail")
+	}
+}
+
+func TestReleaseDownloadBase(t *testing.T) {
+	got := releaseDownloadBase("brightcolor", "npc", "latest")
+	if got != "https://github.com/brightcolor/npc/releases/latest/download" {
+		t.Fatalf("unexpected latest URL: %s", got)
+	}
+	got = releaseDownloadBase("brightcolor", "npc", "v0.1.3")
+	if got != "https://github.com/brightcolor/npc/releases/download/v0.1.3" {
+		t.Fatalf("unexpected version URL: %s", got)
+	}
+}

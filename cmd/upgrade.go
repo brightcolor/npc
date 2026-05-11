@@ -2,16 +2,36 @@ package cmd
 
 import (
 	"fmt"
-	"runtime"
 
+	"github.com/brightcolor/npc/internal/updater"
 	"github.com/spf13/cobra"
 )
 
 func upgradeCommand() *cobra.Command {
-	return &cobra.Command{Use: "upgrade", Short: "Upgrade npc from GitHub Releases", RunE: runUpgrade}
+	var version string
+	cmd := &cobra.Command{Use: "upgrade", Short: "Upgrade npc from GitHub Releases", RunE: func(cmd *cobra.Command, args []string) error {
+		return runUpgradeVersion(version)
+	}}
+	cmd.Flags().StringVar(&version, "version", "", "release version to install, for example v0.1.3; defaults to latest")
+	return cmd
 }
 
 func runUpgrade(cmd *cobra.Command, args []string) error {
-	artifact := fmt.Sprintf("npc-%s-%s", runtime.GOOS, runtime.GOARCH)
-	return validationError{fmt.Errorf("self-upgrade is scaffolded for %s/%s (%s); configure repoOwner/repoName and enable release download in the next phase", app.build.RepoOwner, app.build.RepoName, artifact)}
+	return runUpgradeVersion("")
+}
+
+func runUpgradeVersion(version string) error {
+	result, err := updater.Upgrade(updater.Options{
+		RepoOwner: app.build.RepoOwner,
+		RepoName:  app.build.RepoName,
+		Version:   version,
+	})
+	if err != nil {
+		return fmt.Errorf("upgrade failed: %w", err)
+	}
+	if app.jsonOut {
+		return writeJSON(result)
+	}
+	fmt.Printf("Upgraded npc using %s\nTarget: %s\nBackup: %s\n", result.Artifact, result.Target, result.Backup)
+	return nil
 }

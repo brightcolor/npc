@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.3 - 2026-05-11
+
+- Expanded README with a general explanation of how `npc` works.
+- Documented Docker discovery and port selection behavior.
+- Documented proxy profiles and when to use each one.
+- Documented TLS/certificate modes and the relationship between Nginx and generated configs.
+- Implemented `npc upgrade` with GitHub Release downloads, SHA256 verification, binary backup, atomic replacement, and rollback attempt on replacement failure.
+- Added `npc upgrade --version <tag>` for installing a specific SemVer release.
+- Fixed the Docker backend example formatting.
+
 ## 0.1.2 - 2026-05-11
 
 - Added `npc tui` and made bare `npc` open the terminal UI.

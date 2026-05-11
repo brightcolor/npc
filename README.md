@@ -10,7 +10,7 @@ It is built for administrators who want repeatable reverse proxy setup with safe
 
 ## Status
 
-`v0.1.0` is the first MVP release. It includes the CLI structure, HTTP reverse proxy generation, manual certificate config, acme.sh scaffolding, backups, metadata, release builds, and tests. Some advanced flows are intentionally conservative and will mature over later releases.
+`v0.1.x` is the first MVP line. It includes the CLI structure, terminal UI, Docker discovery, HTTP reverse proxy generation, manual certificate config, acme.sh scaffolding, backups, metadata, release builds, and tests. Some advanced flows are intentionally conservative and will mature over later releases.
 
 ## Install
 
@@ -84,6 +84,116 @@ npc create \
   --dry-run
 ```
 
+## How It Works
+
+`npc` keeps the moving parts deliberately simple:
+
+1. You describe a public hostname and a backend.
+2. `npc` validates the input and checks local dependencies.
+3. It renders an Nginx server config from an embedded template.
+4. It writes the config to `/etc/nginx/sites-available/<hostname>.conf`.
+5. It enables the site with a symlink in `/etc/nginx/sites-enabled/`.
+6. It runs `nginx -t`.
+7. It reloads Nginx only when the config test succeeds.
+8. It stores site metadata in `/etc/npc/config.yaml`.
+
+The generated Nginx config is a normal reverse proxy. Public traffic reaches Nginx on port 80 or 443, Nginx forwards the request to the backend service, and the backend receives standard proxy headers such as `X-Forwarded-For`, `X-Forwarded-Proto`, and `X-Real-IP`.
+
+`npc` does not replace Nginx. It writes managed Nginx config files and leaves Nginx in charge of serving traffic.
+
+## Docker Flow
+
+When you run `npc` or `npc tui`, the terminal UI can scan Docker with:
+
+```bash
+docker ps --format '{{json .}}'
+```
+
+It reads container names, images, networks, and port mappings. If a container publishes a port like `0.0.0.0:8080->80/tcp`, `npc` proposes `127.0.0.1:8080` as the backend because that is reachable from host Nginx.
+
+If a container only exposes an internal port like `80/tcp`, `npc` can still offer it, but it shows a warning. In that case Nginx on the host must be able to resolve and reach the container name, which usually requires deliberate Docker networking. `npc` does not modify Docker containers, Docker networks, or Compose files.
+
+## Proxy Profiles
+
+Profiles are presets for common reverse proxy behavior. They do not create a different kind of site; they adjust Nginx settings such as timeouts, WebSocket headers, and request-size expectations.
+
+Use a profile as a starting point, then override individual flags when needed.
+
+| Profile | Use case | What it changes |
+| --- | --- | --- |
+| `generic` | Standard web apps, dashboards, APIs | Balanced defaults, `60s` proxy read timeout, `100M` body size unless changed |
+| `websocket` | Apps with WebSockets, realtime dashboards, Socket.IO | Longer read timeout and WebSocket-friendly behavior when used with `--websocket` |
+| `upload` | File uploads, Nextcloud-like apps, large requests | Longer read timeout; usually pair with `--client-max-body-size 512M` or `1G` |
+| `streaming` | SSE, long polling, streaming responses | Long read timeout for connections that intentionally stay open |
+| `docker` | Backends discovered from Docker containers | Uses Docker container/port discovery and host-reachable backend defaults |
+| `security-basic` | Small internal tools that need simple protection | Intended for stricter headers and Basic Auth flows as the security feature set expands |
+
+Current template behavior is intentionally conservative: profiles mainly influence proxy timeout selection, while explicit flags such as `--websocket`, `--client-max-body-size`, `--security-headers`, `--access-log`, and `--error-log` control the visible Nginx directives.
+
+Examples:
+
+```bash
+sudo npc create \
+  --hostname ws.example.com \
+  --backend-host 127.0.0.1 \
+  --backend-port 8080 \
+  --profile websocket \
+  --websocket \
+  --non-interactive
+```
+
+```bash
+sudo npc create \
+  --hostname files.example.com \
+  --backend-host 127.0.0.1 \
+  --backend-port 8080 \
+  --profile upload \
+  --client-max-body-size 1G \
+  --non-interactive
+```
+
+## TLS and Certificates
+
+For HTTP-only sites, Nginx listens on port 80 and proxies directly to the backend.
+
+For HTTPS sites, `npc` can render a TLS server block with:
+
+- `ssl_certificate`
+- `ssl_certificate_key`
+- TLS 1.2 and TLS 1.3
+- HTTP/2 when `--http2` is set
+- HTTP-to-HTTPS redirects when `--redirect-https` is set
+
+There are two certificate modes:
+
+- Existing certificate: pass `--cert-path` and `--key-path`.
+- acme.sh: pass `--ssl --acme` and select `--acme-method http`, `dns`, `standalone`, or `tls-alpn`.
+
+When ACME is enabled, `npc` checks whether `acme.sh` is installed and asks before installing it. DNS provider secrets must never be pasted into logs; keep them in `/etc/npc/secrets/<provider>.env` with mode `0600`.
+
+## Upgrade Flow
+
+`npc upgrade` updates the installed binary from GitHub Releases.
+
+```bash
+sudo npc upgrade
+```
+
+By default it uses the latest release and selects the asset for the current platform:
+
+- `npc-linux-amd64`
+- `npc-linux-arm64`
+
+The upgrade flow downloads the binary and `SHA256SUMS`, verifies the checksum, backs up the current binary as `<target>.bak.<timestamp>`, writes the new binary, and replaces the old one atomically. If replacing the binary fails, `npc` tries to roll back to the backup.
+
+Install a specific release:
+
+```bash
+sudo npc upgrade --version v0.1.3
+```
+
+When `npc` is installed at `/usr/local/bin/npc`, upgrade requires root because that path is system-owned.
+
 ## Examples
 
 ### Local App
@@ -108,6 +218,7 @@ Inside the UI, choose **Expose a Docker container**, select a running container,
 
 The direct non-interactive equivalent is:
 
+```bash
 sudo npc create \
   --hostname app.example.com \
   --backend-host container-name \
