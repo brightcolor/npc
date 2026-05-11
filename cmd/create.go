@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/brightcolor/npc/internal/acme"
 	"github.com/brightcolor/npc/internal/backup"
 	"github.com/brightcolor/npc/internal/config"
 	"github.com/brightcolor/npc/internal/nginx"
@@ -87,6 +88,9 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	if err := system.RequireRoot(); err != nil {
 		return permissionError{err}
 	}
+	if err := ensureRuntimeDependencies(o); err != nil {
+		return err
+	}
 	cfg, err := config.Load("")
 	if err != nil {
 		return err
@@ -124,6 +128,42 @@ func runCreate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	fmt.Printf("Created %s -> %s\n", site.Hostname, site.BackendURL())
+	return nil
+}
+
+func ensureRuntimeDependencies(o createOptions) error {
+	if !system.Exists("nginx") {
+		if o.nonInteractive && !o.force {
+			return validationError{fmt.Errorf("nginx is not installed; rerun interactively or use --force to install it")}
+		}
+		install := o.force
+		if !install {
+			install = promptConfirm("Nginx is not installed. Install it now with apt?", true)
+		}
+		if !install {
+			return validationError{fmt.Errorf("nginx is required before creating a site")}
+		}
+		fmt.Println("Installing Nginx...")
+		if err := nginx.InstallApt(true); err != nil {
+			return err
+		}
+	}
+	if o.acme && !acme.Installed() {
+		if o.nonInteractive && !o.force {
+			return validationError{fmt.Errorf("acme.sh is not installed; rerun interactively or use --force to install it")}
+		}
+		install := o.force
+		if !install {
+			install = promptConfirm("acme.sh is not installed. Install it now?", true)
+		}
+		if !install {
+			return validationError{fmt.Errorf("acme.sh is required when --acme is enabled")}
+		}
+		fmt.Println("Installing acme.sh...")
+		if err := acme.Install(o.email); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -283,4 +323,19 @@ func boolDefault(v bool) string {
 func yes(v string) bool {
 	v = strings.ToLower(strings.TrimSpace(v))
 	return v == "y" || v == "yes" || v == "ja" || v == "true"
+}
+
+func promptConfirm(message string, def bool) bool {
+	suffix := " [Y/n]: "
+	if !def {
+		suffix = " [y/N]: "
+	}
+	fmt.Print(message + suffix)
+	reader := bufio.NewReader(os.Stdin)
+	text, _ := reader.ReadString('\n')
+	text = strings.ToLower(strings.TrimSpace(text))
+	if text == "" {
+		return def
+	}
+	return text == "y" || text == "yes" || text == "ja" || text == "true"
 }

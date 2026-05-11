@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1 - 2026-05-11
+
+- Added dependency checks during `npc create`.
+- Added interactive installation prompt for missing Nginx before writing site configs.
+- Added interactive installation prompt for missing `acme.sh` when `--acme` is enabled.
+- Documented dependency behavior and unattended `--non-interactive --force` provisioning.
+
 ## 0.1.0 - 2026-05-11
 
 - Added Go module and Cobra CLI for `npc`.

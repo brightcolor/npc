@@ -39,6 +39,20 @@ Create a local reverse proxy interactively:
 sudo npc create
 ```
 
+Before writing a site, `npc create` checks whether Nginx is installed. If Nginx is missing, it asks before installing it through `apt`. When `--acme` is enabled, `npc` also checks for `acme.sh` and asks before installing it.
+
+For unattended provisioning, combine `--non-interactive` with `--force`:
+
+```bash
+sudo npc create \
+  --hostname app.example.com \
+  --backend-host 127.0.0.1 \
+  --backend-port 3000 \
+  --backend-scheme http \
+  --non-interactive \
+  --force
+```
+
 Create one non-interactively:
 
 ```bash
@@ -201,6 +215,9 @@ Every generated Nginx config starts with:
 
 - Read-only commands should work without root.
 - Write commands require root.
+- `npc create` checks for Nginx before writing and asks before installing it.
+- `npc create --acme` checks for `acme.sh` before writing and asks before installing it.
+- `--non-interactive` never prompts; missing dependencies fail cleanly unless `--force` is set.
 - Existing manual Nginx configs are not overwritten by default.
 - Reload and restart paths run `nginx -t` first.
 - `--dry-run` shows planned files and rendered config.
