@@ -17,6 +17,7 @@ import (
 	"github.com/brightcolor/npc/internal/nginx"
 	"github.com/brightcolor/npc/internal/paths"
 	"github.com/brightcolor/npc/internal/renderer"
+	"github.com/brightcolor/npc/internal/revision"
 	"github.com/brightcolor/npc/internal/system"
 	"github.com/brightcolor/npc/internal/validate"
 	"github.com/spf13/cobra"
@@ -125,6 +126,9 @@ func executeCreate(o createOptions) error {
 		}
 	}
 	if err := nginx.WriteSite(site.ConfigPath, content); err != nil {
+		return err
+	}
+	if _, err := revision.Save(site, content); err != nil {
 		return err
 	}
 	if err := nginx.Enable(site.ConfigPath, site.EnabledPath); err != nil {
@@ -260,6 +264,7 @@ func missingCreateFields(o createOptions) []string {
 }
 
 func buildSite(o createOptions) (*config.Site, error) {
+	applyProfileDefaults(&o)
 	if err := validate.Hostname(o.hostname, true); err != nil {
 		return nil, err
 	}
@@ -296,6 +301,35 @@ func buildSite(o createOptions) (*config.Site, error) {
 		site.CertificateKeyPath = path.Join(paths.CertsDir, o.hostname, o.hostname+".key")
 	}
 	return site, nil
+}
+
+func applyProfileDefaults(o *createOptions) {
+	if o.profile == "" {
+		o.profile = "generic"
+	}
+	if o.clientMaxBodySize == "" {
+		o.clientMaxBodySize = "100M"
+	}
+	switch o.profile {
+	case "websocket", "node", "grafana":
+		o.websocket = true
+	case "upload", "nextcloud":
+		if o.clientMaxBodySize == "100M" {
+			o.clientMaxBodySize = "1G"
+		}
+	case "wordpress":
+		if o.clientMaxBodySize == "100M" {
+			o.clientMaxBodySize = "256M"
+		}
+	case "api":
+		if o.securityHeaders == "" {
+			o.securityHeaders = "standard"
+		}
+	case "security-basic":
+		if o.securityHeaders == "" {
+			o.securityHeaders = "standard"
+		}
+	}
 }
 
 func promptCreate(o *createOptions) error {

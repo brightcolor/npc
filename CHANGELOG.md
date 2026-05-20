@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.14 - 2026-05-20
+
+- Added `npc inspect <hostname>` for focused site runtime diagnostics, including symlink state, Nginx service state, certificate summary, and DNS comparison.
+- Added `npc repair <hostname>` to re-render managed configs from metadata with revision capture, backup, `nginx -t`, and safe reload behavior.
+- Expanded `npc certs` with certificate issuer and expiry parsing from PEM files.
+- Updated ACME renew commands to use npc's acme.sh path discovery and added clearer diagnostics for common ACME failures.
+- Added `npc backup list` and `npc backup restore <id-or-path>`.
+- Improved `npc import` so manual Nginx sites can be reviewed and explicitly adopted into npc metadata.
+- Added per-site config revisions under `/etc/npc/state/sites/<hostname>/revisions/<timestamp>/`.
+- Strengthened proxy profiles for WebSocket, upload, streaming, API, WordPress, Nextcloud, Grafana, Node.js, and media workloads.
+
 ## 0.1.13 - 2026-05-11
 
 - Added regression coverage for required proxy forwarding headers.

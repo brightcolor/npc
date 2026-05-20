@@ -120,7 +120,7 @@ func IssueHTTP(hostname, email string) error {
 	}
 	res, err := system.Run(cmd, args...)
 	if err != nil {
-		return fmt.Errorf("acme.sh issue failed: %s", res.Output)
+		return fmt.Errorf("acme.sh issue failed: %s%s", res.Output, DiagnoseOutput(res.Output))
 	}
 	return nil
 }
@@ -141,9 +141,33 @@ func InstallCert(hostname, fullchainPath, keyPath string) error {
 	}
 	res, err := system.Run(cmd, args...)
 	if err != nil {
-		return fmt.Errorf("acme.sh install-cert failed: %s", res.Output)
+		return fmt.Errorf("acme.sh install-cert failed: %s%s", res.Output, DiagnoseOutput(res.Output))
 	}
 	return nil
+}
+
+func DiagnoseOutput(output string) string {
+	text := strings.ToLower(output)
+	var hints []string
+	if strings.Contains(text, "invalid response") || strings.Contains(text, "404") || strings.Contains(text, "timeout") {
+		hints = append(hints, "verify that DNS points to this server and that port 80 is reachable from the internet")
+	}
+	if strings.Contains(text, "connection refused") || strings.Contains(text, "timeout") {
+		hints = append(hints, "check firewall rules, cloud security groups, and whether Nginx is listening on port 80")
+	}
+	if strings.Contains(text, "rate limit") || strings.Contains(text, "too many") {
+		hints = append(hints, "ACME rate limit may be active; wait before retrying or use the staging CA for tests")
+	}
+	if strings.Contains(text, "unauthorized") {
+		hints = append(hints, "the ACME challenge was not accepted; check the challenge webroot and public HTTP access")
+	}
+	if strings.Contains(text, "cloudflare") {
+		hints = append(hints, "if Cloudflare is enabled, avoid Flexible SSL and ensure HTTP-01 traffic reaches the origin")
+	}
+	if len(hints) == 0 {
+		return ""
+	}
+	return "\nSuggested checks:\n- " + strings.Join(hints, "\n- ")
 }
 
 func IssueCommand(hostname, method, provider, email string) []string {

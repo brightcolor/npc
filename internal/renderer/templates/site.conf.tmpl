@@ -66,6 +66,7 @@ server {
         proxy_connect_timeout {{ .ConnectTimeout }};
         proxy_send_timeout {{ .SendTimeout }};
         proxy_read_timeout {{ .ReadTimeout }};
+        proxy_buffering {{ .ProxyBuffering }};
 {{- if .WebSocket }}
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";

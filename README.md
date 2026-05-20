@@ -16,7 +16,7 @@ It is built for administrators who want repeatable reverse proxy setup with safe
 
 ## Status
 
-`v0.1.x` is the first MVP line. It includes the CLI structure, terminal UI, Docker discovery, HTTP reverse proxy generation, manual certificate config, acme.sh scaffolding, backups, metadata, release builds, and tests. Some advanced flows are intentionally conservative and will mature over later releases.
+`v0.1.x` is the first MVP line. It includes the CLI structure, terminal UI, Docker discovery, HTTP reverse proxy generation, manual certificate config, acme.sh HTTP-01 support, backups, config revisions, import/inspect/repair helpers, release builds, and tests. Some advanced flows are intentionally conservative and will mature over later releases.
 
 ## Install
 
@@ -158,14 +158,20 @@ Use a profile as a starting point, then override individual flags when needed.
 
 | Profile | Use case | What it changes |
 | --- | --- | --- |
-| `generic` | Standard web apps, dashboards, APIs | Balanced defaults, `60s` proxy read timeout, `100M` body size unless changed |
-| `websocket` | Apps with WebSockets, realtime dashboards, Socket.IO | Longer read timeout and WebSocket-friendly behavior when used with `--websocket` |
-| `upload` | File uploads, Nextcloud-like apps, large requests | Longer read timeout; usually pair with `--client-max-body-size 512M` or `1G` |
-| `streaming` | SSE, long polling, streaming responses | Long read timeout for connections that intentionally stay open |
+| `generic` | Standard web apps, dashboards, APIs | Balanced defaults, `60s` proxy read timeout, `100M` body size, proxy buffering on |
+| `websocket` | Apps with WebSockets, realtime dashboards, Socket.IO | Enables WebSocket defaults in create flows, long `3600s` read timeout, proxy buffering off |
+| `upload` | File uploads, Nextcloud-like apps, large requests | Raises default body size to `1G`, uses `300s` timeout |
+| `streaming` | SSE, long polling, streaming responses | Uses `3600s` timeout and disables proxy buffering |
 | `docker` | Backends discovered from Docker containers | Uses Docker container/port discovery and host-reachable backend defaults |
-| `security-basic` | Small internal tools that need simple protection | Intended for stricter headers and Basic Auth flows as the security feature set expands |
+| `node` | Node.js and realtime app servers | Enables WebSocket defaults and long timeout behavior |
+| `grafana` | Grafana-style dashboards | Enables WebSocket defaults for live dashboard features |
+| `api` | HTTP APIs | Shorter `30s` timeout and standard security headers unless overridden |
+| `wordpress` | WordPress/PHP frontends behind Nginx | Uses `256M` body size and upload-friendly timeout behavior |
+| `nextcloud` | Nextcloud and large file workflows | Uses `1G` body size and upload-friendly timeout behavior |
+| `media` | Media and long-running response streams | Uses long streaming timeout and disables proxy buffering |
+| `security-basic` | Small internal tools that need simple protection | Applies standard security headers unless overridden |
 
-Current template behavior is intentionally conservative: profiles mainly influence proxy timeout selection, while explicit flags such as `--websocket`, `--client-max-body-size`, `--security-headers`, `--access-log`, and `--error-log` control the visible Nginx directives.
+Profiles are still explicit and inspectable. Generated configs remain normal Nginx configs, and flags such as `--websocket`, `--client-max-body-size`, `--security-headers`, `--access-log`, and `--error-log` can override the preset behavior.
 
 Examples:
 
@@ -207,6 +213,10 @@ There are two certificate modes:
 - acme.sh: pass `--ssl --acme` and select `--acme-method http`, `dns`, `standalone`, or `tls-alpn`.
 
 When ACME is enabled, `npc` checks whether `acme.sh` is installed and asks before installing it. DNS provider secrets must never be pasted into logs; keep them in `/etc/npc/secrets/<provider>.env` with mode `0600`.
+
+`npc certs` reads managed certificate files and reports the issuer, expiry date, days remaining, ACME method, and certificate path. `npc certs renew <hostname>` and `npc certs renew-all` use the same acme.sh discovery logic as issuance, so installations under `/root/.acme.sh/acme.sh` work even when `acme.sh` is not in `$PATH`.
+
+When acme.sh returns common failure patterns, `npc` adds practical hints for DNS, port 80 reachability, firewall/cloud security groups, rate limits, challenge webroot problems, and Cloudflare Flexible SSL loops.
 
 ## Upgrade Flow
 
@@ -344,18 +354,54 @@ npc tui
 npc list
 npc status
 npc show app.example.com
+npc inspect app.example.com
 sudo npc edit app.example.com --backend-port 3001
+sudo npc repair app.example.com
 sudo npc disable app.example.com
 sudo npc enable app.example.com
 sudo npc delete app.example.com --force
 npc certs
 npc doctor
 sudo npc backup
+npc backup list
+sudo npc backup restore <backup-id>
 npc restore
+npc import
+sudo npc import --yes
 npc docker
 ```
 
 `npc list` only shows sites that were created or imported into npc metadata. Existing manual Nginx configs are intentionally not listed until they are imported.
+
+### Inspect and Repair
+
+Use `npc inspect <hostname>` when you want a focused runtime view for one managed site. It shows metadata, whether the enabled symlink exists, whether Nginx is active, certificate expiry information, and DNS comparison results.
+
+Use `sudo npc repair <hostname>` when a managed config should be re-rendered from metadata. Repair writes a config revision, creates a backup, rewrites the Nginx file, ensures the enabled symlink exists, runs `nginx -t`, and reloads Nginx only after a successful config test. Add `--dry-run` to preview the rendered config.
+
+### Backups and Revisions
+
+`sudo npc backup` creates a timestamped backup under `/etc/npc/backups/<timestamp>/`. Use `npc backup list` to list backup ids and `sudo npc backup restore <id-or-path>` to restore known files from a backup.
+
+In addition to backups, create/edit/repair write config revisions under:
+
+```text
+/etc/npc/state/sites/<hostname>/revisions/<timestamp>/
+```
+
+Each revision stores `site.yaml` and the rendered `nginx.conf`. Revisions are for inspection and future rollback workflows; backups are the current restore mechanism.
+
+### Import Existing Sites
+
+`npc import` scans `/etc/nginx/sites-available/*.conf`, detects simple `server_name` and `proxy_pass` directives, and prints import candidates. It does not change anything by default.
+
+After reviewing the output, run:
+
+```bash
+sudo npc import --yes
+```
+
+Imported sites are added to `/etc/npc/config.yaml` so they appear in `npc list`, `npc show`, `npc inspect`, and other metadata-driven commands. Manual Nginx config files are not overwritten during import.
 
 ## Managed Files
 
@@ -368,6 +414,7 @@ npc docker
 /etc/npc/templates/
 /etc/npc/state/
 /etc/npc/sites/
+/etc/npc/state/sites/<hostname>/revisions/<timestamp>/
 /etc/nginx/sites-available/<hostname>.conf
 /etc/nginx/sites-enabled/<hostname>.conf
 ```

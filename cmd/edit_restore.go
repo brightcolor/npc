@@ -2,9 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-	"sort"
 	"time"
 
 	"github.com/brightcolor/npc/internal/backup"
@@ -12,6 +9,7 @@ import (
 	"github.com/brightcolor/npc/internal/nginx"
 	"github.com/brightcolor/npc/internal/paths"
 	"github.com/brightcolor/npc/internal/renderer"
+	"github.com/brightcolor/npc/internal/revision"
 	"github.com/brightcolor/npc/internal/system"
 	"github.com/brightcolor/npc/internal/validate"
 	"github.com/spf13/cobra"
@@ -69,6 +67,9 @@ func editCommand() *cobra.Command {
 		if err := nginx.WriteSite(site.ConfigPath, content); err != nil {
 			return err
 		}
+		if _, err := revision.Save(site, content); err != nil {
+			return err
+		}
 		out, err := nginx.Test()
 		if err != nil {
 			return nginxTestError{fmt.Errorf("nginx -t failed, reload skipped: %s", out)}
@@ -95,21 +96,14 @@ func editCommand() *cobra.Command {
 
 func restoreCommand() *cobra.Command {
 	return &cobra.Command{Use: "restore", Short: "List available backups", RunE: func(cmd *cobra.Command, args []string) error {
-		entries, err := os.ReadDir(paths.BackupsDir)
+		fmt.Println("Use `npc backup list` and `sudo npc backup restore <id-or-path>`.")
+		backups, err := backup.List()
 		if err != nil {
 			return err
 		}
-		names := make([]string, 0, len(entries))
-		for _, entry := range entries {
-			if entry.IsDir() {
-				names = append(names, filepath.Join(paths.BackupsDir, entry.Name()))
-			}
+		for _, item := range backups {
+			fmt.Println(item)
 		}
-		sort.Strings(names)
-		for _, name := range names {
-			fmt.Println(name)
-		}
-		fmt.Println("Restore is intentionally manual in this MVP: inspect a backup directory and copy selected files back after review.")
 		return nil
 	}}
 }

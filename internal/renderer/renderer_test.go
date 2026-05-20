@@ -62,3 +62,15 @@ func TestRenderWebSocketAndSSL(t *testing.T) {
 		}
 	}
 }
+
+func TestStreamingProfileDisablesProxyBuffering(t *testing.T) {
+	site := baseSite()
+	site.Profile = "streaming"
+	out, err := RenderSite(site)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "proxy_buffering off;") {
+		t.Fatalf("expected streaming profile to disable proxy buffering:\n%s", out)
+	}
+}

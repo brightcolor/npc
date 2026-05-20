@@ -1,9 +1,11 @@
 package backup
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/brightcolor/npc/internal/nginx"
 	"github.com/brightcolor/npc/internal/paths"
@@ -12,6 +14,68 @@ import (
 type Set struct {
 	Dir   string   `json:"dir"`
 	Files []string `json:"files"`
+}
+
+func List() ([]string, error) {
+	entries, err := os.ReadDir(paths.BackupsDir)
+	if os.IsNotExist(err) {
+		return []string{}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var backups []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			backups = append(backups, filepath.Join(paths.BackupsDir, entry.Name()))
+		}
+	}
+	sort.Strings(backups)
+	return backups, nil
+}
+
+func Restore(id string) ([]string, error) {
+	if !filepath.IsAbs(id) && (filepath.Clean(id) != id || filepath.Base(id) != id) {
+		return nil, fmt.Errorf("invalid backup id %q", id)
+	}
+	dir := filepath.Join(paths.BackupsDir, id)
+	if filepath.IsAbs(id) {
+		dir = id
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	var restored []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		src := filepath.Join(dir, entry.Name())
+		dst := restoreTarget(entry.Name())
+		if dst == "" {
+			continue
+		}
+		mode := os.FileMode(0o600)
+		if filepath.Ext(dst) == ".conf" {
+			mode = 0o644
+		}
+		if err := copyFile(src, dst, mode); err != nil {
+			return restored, err
+		}
+		restored = append(restored, dst)
+	}
+	return restored, nil
+}
+
+func restoreTarget(name string) string {
+	if name == "config.yaml" {
+		return paths.ConfigFile
+	}
+	if filepath.Ext(name) == ".conf" {
+		return filepath.Join(paths.NginxSitesAvailable, name)
+	}
+	return ""
 }
 
 func Create(files ...string) (*Set, error) {

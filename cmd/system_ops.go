@@ -8,6 +8,7 @@ import (
 	"github.com/brightcolor/npc/internal/backup"
 	"github.com/brightcolor/npc/internal/config"
 	dockerapi "github.com/brightcolor/npc/internal/docker"
+	"github.com/brightcolor/npc/internal/importer"
 	"github.com/brightcolor/npc/internal/installer"
 	"github.com/brightcolor/npc/internal/nginx"
 	"github.com/brightcolor/npc/internal/paths"
@@ -27,7 +28,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 }
 
 func backupCommand() *cobra.Command {
-	return &cobra.Command{Use: "backup", Short: "Back up npc-managed files", RunE: func(cmd *cobra.Command, args []string) error {
+	root := &cobra.Command{Use: "backup", Short: "Back up npc-managed files", RunE: func(cmd *cobra.Command, args []string) error {
 		if err := system.RequireRoot(); err != nil {
 			return permissionError{err}
 		}
@@ -49,6 +50,34 @@ func backupCommand() *cobra.Command {
 		fmt.Println("Backup created:", set.Dir)
 		return nil
 	}}
+	root.AddCommand(&cobra.Command{Use: "list", Short: "List backups", RunE: func(cmd *cobra.Command, args []string) error {
+		backups, err := backup.List()
+		if err != nil {
+			return err
+		}
+		if app.jsonOut {
+			return writeJSON(backups)
+		}
+		for _, item := range backups {
+			fmt.Println(item)
+		}
+		return nil
+	}})
+	root.AddCommand(&cobra.Command{Use: "restore <id-or-path>", Args: cobra.ExactArgs(1), Short: "Restore a backup by id or path", RunE: func(cmd *cobra.Command, args []string) error {
+		if err := system.RequireRoot(); err != nil {
+			return permissionError{err}
+		}
+		restored, err := backup.Restore(args[0])
+		if err != nil {
+			return err
+		}
+		fmt.Println("Restored files:")
+		for _, item := range restored {
+			fmt.Println(" ", item)
+		}
+		return nil
+	}})
+	return root
 }
 
 func uninstallCommand() *cobra.Command {
@@ -116,18 +145,45 @@ func exportCommand() *cobra.Command {
 }
 
 func importCommand() *cobra.Command {
-	return &cobra.Command{Use: "import", Short: "Inspect existing Nginx sites for import", RunE: func(cmd *cobra.Command, args []string) error {
+	var yes bool
+	cmd := &cobra.Command{Use: "import", Short: "Inspect existing Nginx sites for import", RunE: func(cmd *cobra.Command, args []string) error {
 		files, _ := filepath.Glob(filepath.Join(paths.NginxSitesAvailable, "*.conf"))
+		cfg, err := config.Load("")
+		if err != nil {
+			return err
+		}
+		imported := 0
 		for _, file := range files {
+			candidate := importer.ParseFile(file)
 			status := "manual"
-			if nginx.Managed(file) {
+			if candidate.Managed {
 				status = "managed-by-npc"
 			}
-			fmt.Printf("%s\t%s\n", file, status)
+			if candidate.Error != "" {
+				fmt.Printf("%s\t%s\t%s\n", file, status, candidate.Error)
+				continue
+			}
+			fmt.Printf("%s\t%s\t%s -> %s\n", file, status, candidate.Site.Hostname, candidate.Site.BackendURL())
+			if yes && !candidate.Managed {
+				if _, exists := cfg.Sites[candidate.Site.Hostname]; exists {
+					continue
+				}
+				cfg.Sites[candidate.Site.Hostname] = candidate.Site
+				imported++
+			}
 		}
-		fmt.Println("No files were imported. Re-run future import flows only after reviewing candidates.")
+		if yes {
+			if err := config.Save("", cfg); err != nil {
+				return err
+			}
+			fmt.Printf("Imported %d site(s)\n", imported)
+			return nil
+		}
+		fmt.Println("No files were imported. Re-run with --yes after reviewing candidates.")
 		return nil
 	}}
+	cmd.Flags().BoolVar(&yes, "yes", false, "import detected manual sites into npc metadata")
+	return cmd
 }
 
 func dockerCommand() *cobra.Command {

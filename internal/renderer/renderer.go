@@ -19,6 +19,7 @@ type View struct {
 	ConnectTimeout string
 	SendTimeout    string
 	ReadTimeout    string
+	ProxyBuffering string
 }
 
 func RenderSite(site *config.Site) (string, error) {
@@ -34,6 +35,7 @@ func RenderSite(site *config.Site) (string, error) {
 		ConnectTimeout: "60s",
 		SendTimeout:    "60s",
 		ReadTimeout:    timeoutFor(site.Profile),
+		ProxyBuffering: bufferingFor(site.Profile),
 	}
 	var out bytes.Buffer
 	if err := tmpl.Execute(&out, view); err != nil {
@@ -44,11 +46,22 @@ func RenderSite(site *config.Site) (string, error) {
 
 func timeoutFor(profile string) string {
 	switch profile {
-	case "upload":
+	case "upload", "nextcloud", "wordpress":
 		return "300s"
-	case "streaming", "websocket":
+	case "streaming", "websocket", "media":
 		return "3600s"
+	case "api", "static":
+		return "30s"
 	default:
 		return "60s"
+	}
+}
+
+func bufferingFor(profile string) string {
+	switch profile {
+	case "streaming", "websocket", "media":
+		return "off"
+	default:
+		return "on"
 	}
 }

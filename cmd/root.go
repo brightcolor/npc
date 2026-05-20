@@ -61,7 +61,7 @@ func isKnownCommand(name string) bool {
 		"enable": true, "export": true, "help": true, "import": true, "install-nginx": true,
 		"list": true, "logs": true, "maintenance": true, "reload": true, "restart": true,
 		"restore": true, "show": true, "status": true, "test": true, "tui": true,
-		"uninstall": true, "upgrade": true,
+		"uninstall": true, "upgrade": true, "repair": true, "inspect": true,
 	}
 	return known[name]
 }
@@ -97,7 +97,7 @@ func newRootCommand() *cobra.Command {
 	cmd.Flags().Bool("install", false, "install current binary to /usr/local/bin/npc")
 	cmd.Flags().Bool("upgrade", false, "upgrade npc from GitHub Releases")
 	cmd.Flags().Bool("version", false, "show version")
-	cmd.AddCommand(createCommand(), listCommand(), statusCommand(), showCommand(), editCommand())
+	cmd.AddCommand(createCommand(), listCommand(), statusCommand(), showCommand(), editCommand(), repairCommand(), inspectCommand())
 	cmd.AddCommand(enableCommand(), disableCommand(), deleteCommand(), testCommand(), reloadCommand(), restartCommand())
 	cmd.AddCommand(installNginxCommand(), backupCommand(), restoreCommand(), certsCommand(), doctorCommand(), logsCommand())
 	cmd.AddCommand(upgradeCommand(), uninstallCommand(), maintenanceCommand(), checkCommand(), exportCommand(), importCommand(), dockerCommand(), tuiCommand())
