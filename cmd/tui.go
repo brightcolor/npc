@@ -13,6 +13,7 @@ import (
 	"github.com/brightcolor/npc/internal/nginx"
 	"github.com/brightcolor/npc/internal/renderer"
 	"github.com/brightcolor/npc/internal/system"
+	"github.com/brightcolor/npc/internal/updater"
 	"github.com/spf13/cobra"
 )
 
@@ -26,18 +27,32 @@ func runTUI(cmd *cobra.Command, args []string) error {
 	if err := ui.ensureStartupDependencies(); err != nil {
 		return err
 	}
+	ui.showUpdateOnOpen()
 	for {
 		ui.header()
 		ui.dashboard()
-		choice := ui.actionMenu("Choose an action", []menuOption{
+		options := []menuOption{
 			{Title: "Expose a Docker container", Desc: "Scan running containers and publish one through Nginx"},
 			{Title: "Create a custom reverse proxy", Desc: "Enter hostname, backend, TLS, logs, and proxy options manually"},
 			{Title: "List managed sites", Desc: "Show sites tracked in /etc/npc/config.yaml"},
 			{Title: "Edit a managed site", Desc: "Change backend, profile, WebSocket, body size, and logging"},
 			{Title: "Delete a managed site", Desc: "Disable a site and optionally remove config, metadata, and certificates"},
 			{Title: "Show system status", Desc: "Print Nginx, paths, and managed-site counters"},
-			{Title: "Quit", Desc: "Leave the terminal UI"},
-		})
+		}
+		upgradeIndex := -1
+		if app.update != nil && app.update.UpdateAvailable {
+			upgradeIndex = len(options)
+			options = append(options, menuOption{Title: "Upgrade npc", Desc: fmt.Sprintf("Install %s over current %s", app.update.LatestVersion, app.update.CurrentVersion)})
+		}
+		options = append(options, menuOption{Title: "Quit", Desc: "Leave the terminal UI"})
+		choice := ui.actionMenu("Choose an action", options)
+		if choice == upgradeIndex {
+			if err := runUpgradeVersion(""); err != nil {
+				return err
+			}
+			ui.pause()
+			continue
+		}
 		switch choice {
 		case 0:
 			if err := ui.exposeDocker(); err != nil {
@@ -120,6 +135,38 @@ func (ui terminalUI) ensureStartupDependencies() error {
 	return nil
 }
 
+func (ui terminalUI) showUpdateOnOpen() {
+	if app.noUpgrade {
+		return
+	}
+	info, err := updater.Check(app.build.RepoOwner, app.build.RepoName, app.build.Version)
+	if err != nil {
+		if app.verbose {
+			fmt.Println(warn("Update check failed: ") + err.Error())
+			ui.pause()
+		}
+		return
+	}
+	app.update = info
+	if !info.UpdateAvailable {
+		return
+	}
+	ui.header()
+	fmt.Println(panel("Update Available",
+		"Current: "+info.CurrentVersion,
+		"Latest:  "+info.LatestVersion,
+		"Release: "+info.URL,
+	))
+	if strings.TrimSpace(info.Changelog) != "" {
+		fmt.Println()
+		fmt.Println(section("Changelog"))
+		fmt.Println(strings.TrimSpace(info.Changelog))
+	}
+	fmt.Println()
+	fmt.Println(dim("Use the Upgrade npc menu entry to install this release, or start with --no-upgrade to skip checks."))
+	ui.pause()
+}
+
 type terminalUI struct {
 	reader *bufio.Reader
 }
@@ -155,6 +202,11 @@ func (ui terminalUI) dashboard() {
 	fmt.Printf("  %-16s %-14s %-16s %-14s\n", "Nginx", badge(system.Exists("nginx")), "Service", badge(nginx.ServiceActive()))
 	fmt.Printf("  %-16s %-14s %-16s %s\n", "Docker", badge(docker.Installed()), "Sites", fmt.Sprintf("%d active / %d total", active, len(cfg.Sites)))
 	fmt.Printf("  %-16s %-14s %-16s %s\n", "Config", ok("TRACKED"), "Reload guard", ok("nginx -t"))
+	if app.update != nil && app.update.UpdateAvailable {
+		fmt.Printf("  %-16s %-14s %-16s %s\n", "Version", warn(app.update.CurrentVersion), "Latest", ok(app.update.LatestVersion))
+	} else {
+		fmt.Printf("  %-16s %-14s %-16s %s\n", "Version", ok(app.build.Version), "Latest", dim("checked"))
+	}
 	if len(cfg.Sites) == 0 {
 		fmt.Println()
 		fmt.Println(emptyState("No managed sites yet", "Expose a Docker container or create a custom reverse proxy to get started."))

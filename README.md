@@ -51,6 +51,8 @@ The UI shows a dashboard with Nginx, Docker, and managed-site status before each
 
 Managed sites can also be edited and deleted from the UI. Editing lets you change the backend host, port, scheme, profile, body size, WebSocket headers, security header profile, and per-site logs before reviewing the rendered Nginx config. Deleting always disables the site first, offers a backup, and then lets you choose whether to remove the Nginx config, npc metadata, and certificate files.
 
+On startup, the UI checks GitHub Releases for a newer npc version. If an update is available, it shows the current version, the latest version, and the release changelog before opening the main menu. The menu then includes an **Upgrade npc** entry.
+
 At startup, the UI checks for Nginx and `acme.sh`. If either tool is missing, `npc` asks whether it should install it. Nginx is installed through `apt`; `acme.sh` is installed through the official installer. Installation requires root, so start the UI with `sudo npc` when you want npc to install missing dependencies.
 
 `acme.sh` usually installs into `/root/.acme.sh/acme.sh` when `npc` runs as root. `npc` runs the official installer using `email=<address>` when an account email is provided, searches the install location directly, and does not require `acme.sh` to be available in `$PATH`.
@@ -226,6 +228,18 @@ When acme.sh returns common failure patterns, `npc` adds practical hints for DNS
 
 ```bash
 sudo npc upgrade
+```
+
+Most CLI commands check GitHub Releases for a newer npc version before running and print a short notice on STDERR when an update is available:
+
+```text
+Update available: npc v0.1.15 -> v0.1.16. Run `sudo npc upgrade` or add `--no-upgrade` to skip this check.
+```
+
+For scripts or parsers, disable that check:
+
+```bash
+npc list --no-upgrade
 ```
 
 By default it uses the latest release and selects the asset for the current platform:

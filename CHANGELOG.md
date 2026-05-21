@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.16 - 2026-05-21
+
+- Added automatic GitHub Release update checks for CLI commands.
+- Added `--no-upgrade` to skip the automatic update check for scripts and parsers.
+- Added update status, latest version display, changelog display, and an upgrade action to the terminal UI.
+
 ## 0.1.15 - 2026-05-21
 
 - Added terminal UI actions for editing managed sites.
