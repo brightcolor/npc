@@ -49,6 +49,8 @@ The UI can scan running Docker containers, list their available ports, and creat
 
 The UI shows a dashboard with Nginx, Docker, and managed-site status before each action. It uses status badges, action cards, and a review screen before writing anything. If no sites exist yet, `npc list` and the UI show an empty-state message instead of returning a blank table.
 
+Managed sites can also be edited and deleted from the UI. Editing lets you change the backend host, port, scheme, profile, body size, WebSocket headers, security header profile, and per-site logs before reviewing the rendered Nginx config. Deleting always disables the site first, offers a backup, and then lets you choose whether to remove the Nginx config, npc metadata, and certificate files.
+
 At startup, the UI checks for Nginx and `acme.sh`. If either tool is missing, `npc` asks whether it should install it. Nginx is installed through `apt`; `acme.sh` is installed through the official installer. Installation requires root, so start the UI with `sudo npc` when you want npc to install missing dependencies.
 
 `acme.sh` usually installs into `/root/.acme.sh/acme.sh` when `npc` runs as root. `npc` runs the official installer using `email=<address>` when an account email is provided, searches the install location directly, and does not require `acme.sh` to be available in `$PATH`.
@@ -372,6 +374,14 @@ npc docker
 ```
 
 `npc list` only shows sites that were created or imported into npc metadata. Existing manual Nginx configs are intentionally not listed until they are imported.
+
+The interactive UI exposes the same lifecycle operations through guided menus:
+
+- create a custom proxy
+- expose a Docker container
+- list managed sites
+- edit a managed site
+- delete a managed site
 
 ### Inspect and Repair
 

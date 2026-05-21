@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.15 - 2026-05-21
+
+- Added terminal UI actions for editing managed sites.
+- Added terminal UI actions for deleting managed sites with explicit choices for backups, config files, metadata, and certificate files.
+- Documented the UI edit/delete lifecycle in the README.
+
 ## 0.1.14 - 2026-05-20
 
 - Added `npc inspect <hostname>` for focused site runtime diagnostics, including symlink state, Nginx service state, certificate summary, and DNS comparison.

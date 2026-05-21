@@ -33,6 +33,8 @@ func runTUI(cmd *cobra.Command, args []string) error {
 			{Title: "Expose a Docker container", Desc: "Scan running containers and publish one through Nginx"},
 			{Title: "Create a custom reverse proxy", Desc: "Enter hostname, backend, TLS, logs, and proxy options manually"},
 			{Title: "List managed sites", Desc: "Show sites tracked in /etc/npc/config.yaml"},
+			{Title: "Edit a managed site", Desc: "Change backend, profile, WebSocket, body size, and logging"},
+			{Title: "Delete a managed site", Desc: "Disable a site and optionally remove config, metadata, and certificates"},
 			{Title: "Show system status", Desc: "Print Nginx, paths, and managed-site counters"},
 			{Title: "Quit", Desc: "Leave the terminal UI"},
 		})
@@ -55,6 +57,16 @@ func runTUI(cmd *cobra.Command, args []string) error {
 			}
 			ui.pause()
 		case 3:
+			if err := ui.editManagedSite(); err != nil {
+				return err
+			}
+			ui.pause()
+		case 4:
+			if err := ui.deleteManagedSite(); err != nil {
+				return err
+			}
+			ui.pause()
+		case 5:
 			return statusCommand().RunE(cmd, args)
 		default:
 			return nil
