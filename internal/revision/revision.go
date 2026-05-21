@@ -9,7 +9,6 @@ import (
 	"github.com/brightcolor/npc/internal/config"
 	"github.com/brightcolor/npc/internal/nginx"
 	"github.com/brightcolor/npc/internal/paths"
-	"gopkg.in/yaml.v3"
 )
 
 type Revision struct {
@@ -25,10 +24,7 @@ func Save(site *config.Site, renderedConfig string) (*Revision, error) {
 		return nil, err
 	}
 	metaPath := filepath.Join(dir, "site.yaml")
-	data, err := yaml.Marshal(site)
-	if err != nil {
-		return nil, err
-	}
+	data := config.MarshalSite(site)
 	if err := os.WriteFile(metaPath, data, 0o600); err != nil {
 		return nil, err
 	}
@@ -96,9 +92,5 @@ func LoadSite(rev Revision) (*config.Site, error) {
 	if err != nil {
 		return nil, err
 	}
-	var site config.Site
-	if err := yaml.Unmarshal(data, &site); err != nil {
-		return nil, err
-	}
-	return &site, nil
+	return config.ParseSite(data)
 }

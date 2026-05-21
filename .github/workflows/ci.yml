@@ -32,9 +32,11 @@ jobs:
           VERSION="${GITHUB_REF_NAME}"
           COMMIT="${GITHUB_SHA}"
           DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          LDFLAGS="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE} -X main.repoOwner=${GITHUB_REPOSITORY_OWNER} -X main.repoName=${GITHUB_REPOSITORY#*/}"
-          GOOS=linux GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o npc-linux-amd64 .
-          GOOS=linux GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o npc-linux-arm64 .
+          GOFLAGS="-trimpath -buildvcs=false"
+          GCFLAGS="all=-l"
+          LDFLAGS="-s -w -buildid= -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE} -X main.repoOwner=${GITHUB_REPOSITORY_OWNER} -X main.repoName=${GITHUB_REPOSITORY#*/}"
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ${GOFLAGS} -gcflags="${GCFLAGS}" -ldflags "${LDFLAGS}" -o npc-linux-amd64 .
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build ${GOFLAGS} -gcflags="${GCFLAGS}" -ldflags "${LDFLAGS}" -o npc-linux-arm64 .
           ./npc-linux-amd64 completion bash > npc.bash
           ./npc-linux-amd64 completion zsh > npc.zsh
           ./npc-linux-amd64 completion fish > npc.fish

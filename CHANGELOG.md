@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.19 - 2026-05-21
+
+- Replaced the external Cobra dependency with a small local CLI layer tailored to npc commands.
+- Removed the YAML dependency by adding a focused reader/writer for npc's own config format.
+- Replaced embedded Go HTTP/TLS downloads with explicit `curl`/`wget` execution while keeping checksum verification.
+- Switched certificate inspection to `openssl x509` to avoid embedding Go's full x509 parser.
+- Added smaller deterministic release builds without binary compression or packers; local linux-amd64 release builds are now roughly half the previous binary size.
+
 ## 0.1.18 - 2026-05-21
 
 - Added `npc diff <hostname>` to compare live configs, rendered configs, and saved revisions.

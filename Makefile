@@ -4,12 +4,14 @@ COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo none)
 DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 REPO_OWNER ?= example
 REPO_NAME ?= npc
-LDFLAGS := -s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DATE) -X main.repoOwner=$(REPO_OWNER) -X main.repoName=$(REPO_NAME)
+GOFLAGS ?= -trimpath -buildvcs=false
+GCFLAGS ?= all=-l
+LDFLAGS := -s -w -buildid= -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DATE) -X main.repoOwner=$(REPO_OWNER) -X main.repoName=$(REPO_NAME)
 
 .PHONY: build test clean release install-local
 
 build:
-	go build -ldflags "$(LDFLAGS)" -o $(BINARY) .
+	CGO_ENABLED=0 go build $(GOFLAGS) -gcflags="$(GCFLAGS)" -ldflags "$(LDFLAGS)" -o $(BINARY) .
 
 test:
 	go test ./...
@@ -18,8 +20,8 @@ clean:
 	rm -f $(BINARY) npc-linux-amd64 npc-linux-arm64 npc.bash npc.zsh npc.fish SHA256SUMS
 
 release: clean
-	GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o npc-linux-amd64 .
-	GOOS=linux GOARCH=arm64 go build -ldflags "$(LDFLAGS)" -o npc-linux-arm64 .
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(GOFLAGS) -gcflags="$(GCFLAGS)" -ldflags "$(LDFLAGS)" -o npc-linux-amd64 .
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build $(GOFLAGS) -gcflags="$(GCFLAGS)" -ldflags "$(LDFLAGS)" -o npc-linux-arm64 .
 	./npc-linux-amd64 completion bash > npc.bash
 	./npc-linux-amd64 completion zsh > npc.zsh
 	./npc-linux-amd64 completion fish > npc.fish

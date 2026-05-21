@@ -3,11 +3,10 @@ package dnscheck
 import (
 	"context"
 	"fmt"
-	"io"
 	"net"
-	"net/http"
 	"strings"
-	"time"
+
+	"github.com/brightcolor/npc/internal/fetch"
 )
 
 type Result struct {
@@ -60,26 +59,17 @@ func PublicIPs(ctx context.Context) ([]string, error) {
 	}
 	var ips []string
 	var lastErr error
-	client := &http.Client{Timeout: 5 * time.Second}
 	for _, endpoint := range endpoints {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		body, err := fetch.Bytes(endpoint)
 		if err != nil {
 			lastErr = err
 			continue
 		}
-		resp, err := client.Do(req)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		body, readErr := io.ReadAll(io.LimitReader(resp.Body, 128))
-		_ = resp.Body.Close()
-		if readErr != nil {
-			lastErr = readErr
-			continue
-		}
-		if resp.StatusCode < 200 || resp.StatusCode > 299 {
-			lastErr = fmt.Errorf("%s returned HTTP %d", endpoint, resp.StatusCode)
+		if len(body) > 128 {
+			lastErr = fmt.Errorf("%s returned too much data", endpoint)
 			continue
 		}
 		ip := net.ParseIP(strings.TrimSpace(string(body)))

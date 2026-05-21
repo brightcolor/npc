@@ -6,12 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 
+	"github.com/brightcolor/npc/internal/fetch"
 	"github.com/brightcolor/npc/internal/nginx"
 	"github.com/brightcolor/npc/internal/paths"
 	"github.com/brightcolor/npc/internal/system"
@@ -140,10 +140,10 @@ func Upgrade(opts Options) (*Result, error) {
 	defer os.RemoveAll(dir)
 	binaryPath := filepath.Join(dir, artifact)
 	sumsPath := filepath.Join(dir, "SHA256SUMS")
-	if err := downloadFile(base+"/"+artifact, binaryPath, 0o755); err != nil {
+	if err := fetch.File(base+"/"+artifact, binaryPath, 0o755); err != nil {
 		return nil, err
 	}
-	if err := downloadFile(base+"/SHA256SUMS", sumsPath, 0o644); err != nil {
+	if err := fetch.File(base+"/SHA256SUMS", sumsPath, 0o644); err != nil {
 		return nil, err
 	}
 	sums, err := os.ReadFile(sumsPath)
@@ -184,26 +184,6 @@ func sameVersion(current, target string) bool {
 	return strings.TrimPrefix(current, "v") == strings.TrimPrefix(target, "v")
 }
 
-func downloadFile(url, path string, mode os.FileMode) error {
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return fmt.Errorf("download failed for %s: HTTP %d", url, resp.StatusCode)
-	}
-	out, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, mode)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-	if _, err := io.Copy(out, resp.Body); err != nil {
-		return err
-	}
-	return out.Chmod(mode)
-}
-
 func latestReleaseTag(owner, repo string) (string, error) {
 	release, err := latestRelease(owner, repo)
 	if err != nil {
@@ -220,16 +200,12 @@ type githubRelease struct {
 
 func latestRelease(owner, repo string) (*githubRelease, error) {
 	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest", owner, repo)
-	resp, err := http.Get(url)
+	data, err := fetch.Bytes(url)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return nil, fmt.Errorf("failed to resolve latest release: HTTP %d", resp.StatusCode)
-	}
 	var payload githubRelease
-	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+	if err := json.Unmarshal(data, &payload); err != nil {
 		return nil, err
 	}
 	if payload.TagName == "" {

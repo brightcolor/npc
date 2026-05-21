@@ -2,13 +2,12 @@ package acme
 
 import (
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
+	"github.com/brightcolor/npc/internal/fetch"
 	"github.com/brightcolor/npc/internal/system"
 )
 
@@ -45,13 +44,9 @@ func CommandPath() string {
 }
 
 func Install(email string) error {
-	resp, err := http.Get("https://get.acme.sh")
+	installerBytes, err := fetch.Bytes("https://get.acme.sh")
 	if err != nil {
 		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return fmt.Errorf("failed to download acme.sh installer: HTTP %d", resp.StatusCode)
 	}
 	dir, err := os.MkdirTemp("", "npc-acme-install-*")
 	if err != nil {
@@ -63,7 +58,7 @@ func Install(email string) error {
 	if err != nil {
 		return err
 	}
-	if _, err := io.Copy(out, resp.Body); err != nil {
+	if _, err := out.Write(installerBytes); err != nil {
 		_ = out.Close()
 		return err
 	}

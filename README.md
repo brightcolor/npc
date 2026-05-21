@@ -613,6 +613,15 @@ Release artifacts:
 - `npc.fish`
 - `SHA256SUMS`
 
+Release binaries are optimized from source rather than compressed. The build removes heavy unused dependency code paths, uses deterministic trim/build-id flags, disables CGO for static Linux output, and avoids binary packers so behavior stays transparent for Linux administrators and scanners.
+
+To keep the single binary small without hiding behavior behind a packer, npc intentionally delegates a few standard system tasks to normal Linux tools:
+
+- `curl` or `wget` for HTTPS downloads during update checks, upgrades, and acme.sh installation
+- `openssl` for certificate inspection in `npc certs`, `npc inspect`, and related certificate views
+
+If those tools are missing, npc reports a clear error instead of silently degrading certificate or download behavior.
+
 ## Troubleshooting
 
 ```bash

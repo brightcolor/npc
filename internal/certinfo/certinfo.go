@@ -1,11 +1,12 @@
 package certinfo
 
 import (
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"os"
+	"strings"
 	"time"
+
+	"github.com/brightcolor/npc/internal/system"
 )
 
 type Info struct {
@@ -29,23 +30,59 @@ func Read(path string, autoRenew bool) Info {
 		return info
 	}
 	info.Exists = true
-	block, _ := pem.Decode(data)
-	if block == nil {
-		info.ParseError = "no PEM certificate block found"
+	if len(data) == 0 {
+		info.ParseError = "empty certificate file"
 		return info
 	}
-	cert, err := x509.ParseCertificate(block.Bytes)
+	if !system.Exists("openssl") {
+		info.ParseError = "openssl was not found"
+		return info
+	}
+	res, err := system.Run("openssl", "x509", "-in", path, "-noout", "-subject", "-issuer", "-dates", "-ext", "subjectAltName")
 	if err != nil {
-		info.ParseError = err.Error()
+		info.ParseError = res.Output
 		return info
 	}
-	info.Subject = cert.Subject.String()
-	info.Issuer = cert.Issuer.String()
-	info.NotBefore = cert.NotBefore
-	info.NotAfter = cert.NotAfter
-	info.DaysLeft = int(time.Until(cert.NotAfter).Hours() / 24)
-	info.DNSNames = cert.DNSNames
+	parseOpenSSLOutput(&info, res.Output)
 	return info
+}
+
+func parseOpenSSLOutput(info *Info, output string) {
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		switch {
+		case strings.HasPrefix(line, "subject="):
+			info.Subject = strings.TrimSpace(strings.TrimPrefix(line, "subject="))
+		case strings.HasPrefix(line, "issuer="):
+			info.Issuer = strings.TrimSpace(strings.TrimPrefix(line, "issuer="))
+		case strings.HasPrefix(line, "notBefore="):
+			info.NotBefore = parseOpenSSLTime(strings.TrimPrefix(line, "notBefore="))
+		case strings.HasPrefix(line, "notAfter="):
+			info.NotAfter = parseOpenSSLTime(strings.TrimPrefix(line, "notAfter="))
+			if !info.NotAfter.IsZero() {
+				info.DaysLeft = int(time.Until(info.NotAfter).Hours() / 24)
+			}
+		case strings.Contains(line, "DNS:"):
+			info.DNSNames = parseDNSNames(line)
+		}
+	}
+}
+
+func parseOpenSSLTime(value string) time.Time {
+	t, _ := time.Parse("Jan 2 15:04:05 2006 MST", strings.TrimSpace(value))
+	return t
+}
+
+func parseDNSNames(line string) []string {
+	parts := strings.Split(line, ",")
+	names := []string{}
+	for _, part := range parts {
+		part = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(part), "DNS:"))
+		if part != "" && !strings.Contains(part, "X509v3") {
+			names = append(names, part)
+		}
+	}
+	return names
 }
 
 func Summary(info Info) string {
