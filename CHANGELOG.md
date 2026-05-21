@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.17 - 2026-05-21
+
+- Expanded README documentation for proxy profiles, including choosing guidance, exact behavior, and command examples.
+- Added a README section with useful next production features.
+
 ## 0.1.16 - 2026-05-21
 
 - Added automatic GitHub Release update checks for CLI commands.

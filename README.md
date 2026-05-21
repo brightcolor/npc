@@ -156,28 +156,42 @@ If a container only exposes an internal port like `80/tcp`, `npc` can still offe
 
 ## Proxy Profiles
 
-Profiles are presets for common reverse proxy behavior. They do not create a different kind of site; they adjust Nginx settings such as timeouts, WebSocket headers, and request-size expectations.
+Profiles are named presets for common reverse proxy behavior. They do not hide anything or create a special npc-only runtime. A profile only changes normal Nginx settings that are visible in the generated config and stored in `/etc/npc/config.yaml`.
 
-Use a profile as a starting point, then override individual flags when needed.
+Use profiles as safe starting points. If a profile is close but not perfect, keep the profile and override the exact setting with flags such as `--websocket`, `--client-max-body-size`, `--security-headers`, `--access-log`, or `--error-log`.
 
-| Profile | Use case | What it changes |
-| --- | --- | --- |
-| `generic` | Standard web apps, dashboards, APIs | Balanced defaults, `60s` proxy read timeout, `100M` body size, proxy buffering on |
-| `websocket` | Apps with WebSockets, realtime dashboards, Socket.IO | Enables WebSocket defaults in create flows, long `3600s` read timeout, proxy buffering off |
-| `upload` | File uploads, Nextcloud-like apps, large requests | Raises default body size to `1G`, uses `300s` timeout |
-| `streaming` | SSE, long polling, streaming responses | Uses `3600s` timeout and disables proxy buffering |
-| `docker` | Backends discovered from Docker containers | Uses Docker container/port discovery and host-reachable backend defaults |
-| `node` | Node.js and realtime app servers | Enables WebSocket defaults and long timeout behavior |
-| `grafana` | Grafana-style dashboards | Enables WebSocket defaults for live dashboard features |
-| `api` | HTTP APIs | Shorter `30s` timeout and standard security headers unless overridden |
-| `wordpress` | WordPress/PHP frontends behind Nginx | Uses `256M` body size and upload-friendly timeout behavior |
-| `nextcloud` | Nextcloud and large file workflows | Uses `1G` body size and upload-friendly timeout behavior |
-| `media` | Media and long-running response streams | Uses long streaming timeout and disables proxy buffering |
-| `security-basic` | Small internal tools that need simple protection | Applies standard security headers unless overridden |
+### Profile Effects
 
-Profiles are still explicit and inspectable. Generated configs remain normal Nginx configs, and flags such as `--websocket`, `--client-max-body-size`, `--security-headers`, `--access-log`, and `--error-log` can override the preset behavior.
+| Profile | Best for | Timeout behavior | Buffering | Body size default | Extra defaults |
+| --- | --- | --- | --- | --- | --- |
+| `generic` | Normal web apps, dashboards, admin tools | `60s` | on | `100M` | Conservative default |
+| `websocket` | Socket.IO, realtime apps, live dashboards | `3600s` | off | `100M` | Enables WebSocket headers in create flows |
+| `upload` | File uploads and larger POST requests | `300s` | on | `1G` | Upload-oriented defaults |
+| `streaming` | SSE, long polling, streamed responses | `3600s` | off | `100M` | Keeps long responses open |
+| `docker` | Backends selected from Docker discovery | `60s` | on | `100M` | Host-reachable Docker backend defaults |
+| `node` | Node.js app servers and realtime frontends | `3600s` | off | `100M` | Enables WebSocket headers in create flows |
+| `grafana` | Grafana and dashboard UIs | `3600s` | off | `100M` | Enables WebSocket headers for live features |
+| `api` | HTTP APIs and JSON services | `30s` | on | `100M` | Applies standard security headers unless overridden |
+| `wordpress` | WordPress/PHP frontends behind Nginx | `300s` | on | `256M` | More forgiving upload size |
+| `nextcloud` | Nextcloud and large file workflows | `300s` | on | `1G` | Upload-oriented defaults |
+| `media` | Media apps and long response streams | `3600s` | off | `100M` | Streaming-oriented defaults |
+| `security-basic` | Small internal tools needing safer headers | `60s` | on | `100M` | Applies standard security headers unless overridden |
 
-Examples:
+### Choosing a Profile
+
+Use `generic` when the app behaves like a standard web service. This is the right default for most admin panels, dashboards, and simple HTTP apps.
+
+Use `websocket`, `node`, or `grafana` when the browser keeps live connections open. These profiles keep proxy reads open longer and disable buffering so realtime updates are not delayed.
+
+Use `upload`, `wordpress`, or `nextcloud` when users upload files, import media, or send large forms. These profiles raise the request body size and use longer timeouts so Nginx does not interrupt slow uploads too aggressively.
+
+Use `streaming` or `media` when the backend intentionally sends long-running responses, server-sent events, long polling, or media streams. These profiles disable proxy buffering so clients see data as the backend sends it.
+
+Use `api` for JSON APIs where short failures are better than long-hanging requests. It uses tighter timeouts and applies standard security headers by default.
+
+Use `security-basic` for small internal tools where the first goal is safer defaults. It does not replace authentication, but it is a better starting point for private tools than a completely generic proxy.
+
+### Common Profile Commands
 
 ```bash
 sudo npc create \
@@ -198,6 +212,40 @@ sudo npc create \
   --client-max-body-size 1G \
   --non-interactive
 ```
+
+```bash
+sudo npc create \
+  --hostname api.example.com \
+  --backend-host 127.0.0.1 \
+  --backend-port 9000 \
+  --profile api \
+  --security-headers standard \
+  --non-interactive
+```
+
+```bash
+sudo npc create \
+  --hostname nextcloud.example.com \
+  --backend-host 127.0.0.1 \
+  --backend-port 8080 \
+  --profile nextcloud \
+  --client-max-body-size 1G \
+  --non-interactive
+```
+
+## Useful Next Features
+
+The next features that would make npc more useful in real production environments are:
+
+- `npc diff <hostname>` to compare metadata, rendered config, live Nginx config, and the latest revision.
+- `npc rollback <hostname>` to restore a previous config revision safely with `nginx -t`.
+- ACME DNS-01 provider setup wizards for Cloudflare, Hetzner, Route53, IONOS, Netcup, DigitalOcean, and DuckDNS.
+- A real `npc firewall suggest` command that prints ufw, firewalld, and nftables hints without changing firewall state.
+- `npc migrate` for config schema upgrades as `/etc/npc/config.yaml` evolves.
+- Optional Prometheus-style health output for monitoring systems.
+- Shell completions packaged in releases.
+- Package artifacts for `.deb`, `.rpm`, and Arch Linux in addition to raw binaries.
+- A small `npc systemd` helper for checking timers, renew hooks, and Nginx service integration.
 
 ## TLS and Certificates
 
