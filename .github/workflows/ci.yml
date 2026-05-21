@@ -35,10 +35,16 @@ jobs:
           LDFLAGS="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE} -X main.repoOwner=${GITHUB_REPOSITORY_OWNER} -X main.repoName=${GITHUB_REPOSITORY#*/}"
           GOOS=linux GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o npc-linux-amd64 .
           GOOS=linux GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o npc-linux-arm64 .
-          sha256sum npc-linux-amd64 npc-linux-arm64 > SHA256SUMS
+          ./npc-linux-amd64 completion bash > npc.bash
+          ./npc-linux-amd64 completion zsh > npc.zsh
+          ./npc-linux-amd64 completion fish > npc.fish
+          sha256sum npc-linux-amd64 npc-linux-arm64 npc.bash npc.zsh npc.fish > SHA256SUMS
       - uses: softprops/action-gh-release@v2
         with:
           files: |
             npc-linux-amd64
             npc-linux-arm64
+            npc.bash
+            npc.zsh
+            npc.fish
             SHA256SUMS

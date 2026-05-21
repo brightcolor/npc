@@ -79,12 +79,13 @@ func isQuickCreateArgs(args []string) bool {
 
 func isKnownCommand(name string) bool {
 	known := map[string]bool{
-		"backup": true, "certs": true, "check": true, "completion": true, "create": true,
+		"acme": true, "backup": true, "certs": true, "check": true, "completion": true, "create": true,
 		"delete": true, "disable": true, "docker": true, "doctor": true, "edit": true,
-		"enable": true, "export": true, "help": true, "import": true, "install-nginx": true,
-		"list": true, "logs": true, "maintenance": true, "reload": true, "restart": true,
-		"restore": true, "show": true, "status": true, "test": true, "tui": true,
-		"uninstall": true, "upgrade": true, "repair": true, "inspect": true,
+		"enable": true, "export": true, "health": true, "help": true, "import": true, "install-nginx": true,
+		"list": true, "logs": true, "maintenance": true, "migrate": true, "monitor": true,
+		"reload": true, "restart": true, "restore": true, "show": true, "status": true,
+		"test": true, "tui": true, "uninstall": true, "upgrade": true, "repair": true,
+		"inspect": true, "diff": true, "rollback": true, "firewall": true,
 	}
 	return known[name]
 }
@@ -130,6 +131,7 @@ func newRootCommand() *cobra.Command {
 	cmd.AddCommand(enableCommand(), disableCommand(), deleteCommand(), testCommand(), reloadCommand(), restartCommand())
 	cmd.AddCommand(installNginxCommand(), backupCommand(), restoreCommand(), certsCommand(), doctorCommand(), logsCommand())
 	cmd.AddCommand(upgradeCommand(), uninstallCommand(), maintenanceCommand(), checkCommand(), exportCommand(), importCommand(), dockerCommand(), tuiCommand())
+	cmd.AddCommand(diffCommand(), rollbackCommand(), firewallCommand(), migrateCommand(), monitorCommand(), acmeCommand())
 	return cmd
 }
 

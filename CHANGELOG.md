@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.18 - 2026-05-21
+
+- Added `npc diff <hostname>` to compare live configs, rendered configs, and saved revisions.
+- Added `npc rollback <hostname>` with backup, revision restore, `nginx -t`, and safe reload behavior.
+- Added `npc acme dns-setup <provider>` for DNS-01 provider env templates.
+- Added `npc firewall suggest` for ufw, firewalld, and nftables guidance without changing rules.
+- Added `npc migrate` for conservative config schema preparation.
+- Added `npc monitor` and `npc health` for JSON, text, and Prometheus-style health output.
+- Added shell completion artifacts to release workflows.
+
 ## 0.1.17 - 2026-05-21
 
 - Expanded README documentation for proxy profiles, including choosing guidance, exact behavior, and command examples.

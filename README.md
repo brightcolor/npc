@@ -233,19 +233,96 @@ sudo npc create \
   --non-interactive
 ```
 
-## Useful Next Features
+## Operations
 
-The next features that would make npc more useful in real production environments are:
+### Diff and Rollback
 
-- `npc diff <hostname>` to compare metadata, rendered config, live Nginx config, and the latest revision.
-- `npc rollback <hostname>` to restore a previous config revision safely with `nginx -t`.
-- ACME DNS-01 provider setup wizards for Cloudflare, Hetzner, Route53, IONOS, Netcup, DigitalOcean, and DuckDNS.
-- A real `npc firewall suggest` command that prints ufw, firewalld, and nftables hints without changing firewall state.
-- `npc migrate` for config schema upgrades as `/etc/npc/config.yaml` evolves.
-- Optional Prometheus-style health output for monitoring systems.
-- Shell completions packaged in releases.
-- Package artifacts for `.deb`, `.rpm`, and Arch Linux in addition to raw binaries.
-- A small `npc systemd` helper for checking timers, renew hooks, and Nginx service integration.
+`npc diff <hostname>` compares the live Nginx config with the config that npc would render from metadata. It also compares the latest saved revision when one exists.
+
+```bash
+npc diff app.example.com
+npc diff app.example.com --revision 20260521T011500Z
+```
+
+`npc rollback <hostname>` restores a saved revision safely. It creates a backup first, writes the revision config, runs `nginx -t`, and reloads Nginx only when the test succeeds.
+
+```bash
+sudo npc rollback app.example.com
+sudo npc rollback app.example.com --revision 20260521T011500Z
+sudo npc rollback app.example.com --dry-run
+```
+
+### DNS-01 Provider Setup
+
+`npc acme dns-setup <provider>` creates a protected env-file template under `/etc/npc/secrets/<provider>.env` with mode `0600`. It writes placeholders instead of asking for secrets in the terminal, so tokens are not echoed into logs or shell history.
+
+```bash
+sudo npc acme dns-setup cloudflare
+npc acme dns-setup route53 --print-template
+```
+
+Supported providers:
+
+- `cloudflare`
+- `hetzner`
+- `netcup`
+- `ionos`
+- `route53`
+- `digitalocean`
+- `duckdns`
+- `custom`
+
+After writing the template, edit the placeholder values and reference the provider during creation:
+
+```bash
+sudo npc create \
+  --hostname app.example.com \
+  --backend-host 127.0.0.1 \
+  --backend-port 3000 \
+  --ssl \
+  --acme \
+  --acme-method dns \
+  --dns-provider cloudflare \
+  --non-interactive
+```
+
+### Firewall Suggestions
+
+`npc firewall suggest` detects common firewall tools and prints suggested commands without changing firewall rules.
+
+```bash
+npc firewall suggest
+npc firewall suggest --json
+```
+
+The output covers `ufw`, `firewalld`, and `nftables` hints. HTTP-01 needs inbound TCP/80. Public HTTPS needs inbound TCP/443. DNS-01 does not need inbound validation ports.
+
+### Config Migration
+
+`npc migrate` prepares `/etc/npc` for the current config schema. It is intentionally conservative and supports dry runs.
+
+```bash
+npc migrate --dry-run
+sudo npc migrate
+```
+
+### Monitoring Output
+
+`npc monitor` prints a compact health snapshot. `npc health` is an alias.
+
+```bash
+npc monitor
+npc monitor --json
+npc monitor --prometheus
+```
+
+The Prometheus-style output includes:
+
+- `npc_nginx_active`
+- `npc_nginx_test_ok`
+- `npc_sites_total`
+- `npc_sites_enabled`
+- `npc_sites_disabled`
 
 ## TLS and Certificates
 
@@ -418,14 +495,20 @@ npc tui
 npc list
 npc status
 npc show app.example.com
+npc diff app.example.com
 npc inspect app.example.com
 sudo npc edit app.example.com --backend-port 3001
 sudo npc repair app.example.com
+sudo npc rollback app.example.com
 sudo npc disable app.example.com
 sudo npc enable app.example.com
 sudo npc delete app.example.com --force
 npc certs
 npc doctor
+npc monitor --prometheus
+npc firewall suggest
+npc acme dns-setup cloudflare --print-template
+npc migrate --dry-run
 sudo npc backup
 npc backup list
 sudo npc backup restore <backup-id>
@@ -525,6 +608,9 @@ Release artifacts:
 
 - `npc-linux-amd64`
 - `npc-linux-arm64`
+- `npc.bash`
+- `npc.zsh`
+- `npc.fish`
 - `SHA256SUMS`
 
 ## Troubleshooting
