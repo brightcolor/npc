@@ -3,7 +3,7 @@ package acme
 import "testing"
 
 func TestIssueCommandDNS(t *testing.T) {
-	cmd := IssueCommand("app.example.com", "dns", "cloudflare", "admin@example.com")
+	cmd := IssueCommand("app.example.com", "dns", "cloudflare", "admin@example.com", "")
 	joined := ""
 	for _, part := range cmd {
 		joined += part + " "
@@ -14,8 +14,15 @@ func TestIssueCommandDNS(t *testing.T) {
 }
 
 func TestIssueCommandUsesLetsEncrypt(t *testing.T) {
-	cmd := IssueCommand("app.example.com", "dns", "cloudflare", "")
+	cmd := IssueCommand("app.example.com", "dns", "cloudflare", "", "")
 	if cmd[2] != "--server" || cmd[3] != "letsencrypt" {
 		t.Fatalf("expected letsencrypt server in command: %#v", cmd)
+	}
+}
+
+func TestIssueCommandAllowsManualCA(t *testing.T) {
+	cmd := IssueCommand("app.example.com", "http", "", "", "zerossl")
+	if cmd[3] != "zerossl" {
+		t.Fatalf("expected manual CA in command: %#v", cmd)
 	}
 }

@@ -31,6 +31,7 @@ type Site struct {
 	SSL                bool      `yaml:"ssl_enabled" json:"ssl_enabled"`
 	ACME               bool      `yaml:"acme_enabled" json:"acme_enabled"`
 	ACMEMethod         string    `yaml:"acme_method,omitempty" json:"acme_method,omitempty"`
+	ACMECA             string    `yaml:"acme_ca,omitempty" json:"acme_ca,omitempty"`
 	DNSProvider        string    `yaml:"dns_provider,omitempty" json:"dns_provider,omitempty"`
 	ACMEEmail          string    `yaml:"acme_email,omitempty" json:"acme_email,omitempty"`
 	RedirectHTTPS      bool      `yaml:"redirect_https" json:"redirect_https"`
@@ -150,6 +151,7 @@ func writeSite(b *strings.Builder, s *Site, indent string) {
 	writeBool(b, indent, "ssl_enabled", s.SSL)
 	writeBool(b, indent, "acme_enabled", s.ACME)
 	writeString(b, indent, "acme_method", s.ACMEMethod)
+	writeString(b, indent, "acme_ca", s.ACMECA)
 	writeString(b, indent, "dns_provider", s.DNSProvider)
 	writeString(b, indent, "acme_email", s.ACMEEmail)
 	writeBool(b, indent, "redirect_https", s.RedirectHTTPS)
@@ -243,6 +245,8 @@ func setSiteField(s *Site, key, val string) {
 		s.ACME = parseBool(val)
 	case "acme_method":
 		s.ACMEMethod = val
+	case "acme_ca":
+		s.ACMECA = val
 	case "dns_provider":
 		s.DNSProvider = val
 	case "acme_email":

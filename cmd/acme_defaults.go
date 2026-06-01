@@ -1,6 +1,9 @@
 package cmd
 
-import "github.com/brightcolor/npc/internal/secrets"
+import (
+	"github.com/brightcolor/npc/internal/acme"
+	"github.com/brightcolor/npc/internal/secrets"
+)
 
 func cloudflareDNSReady() bool {
 	_, err := secrets.ReadEnv("cloudflare")
@@ -8,6 +11,9 @@ func cloudflareDNSReady() bool {
 }
 
 func applyEnvironmentDefaults(o *createOptions) {
+	if o.acmeCA == "" {
+		o.acmeCA = acme.DefaultCA
+	}
 	if o.ssl && o.acme && cloudflareDNSReady() {
 		if o.acmeMethod == "" {
 			o.acmeMethod = "dns"

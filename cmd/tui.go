@@ -210,7 +210,7 @@ func (ui terminalUI) dashboard() {
 		"Nginx:        "+badge(system.Exists("nginx"))+"    Service: "+badge(nginx.ServiceActive()),
 		"Docker:       "+badge(docker.Installed())+"    Sites:   "+fmt.Sprintf("%d active / %d total", active, len(cfg.Sites)),
 		"Config:       "+ok("tracked")+"    Guard:   "+ok("nginx -t before reload"),
-		"Cloudflare:   "+badge(cloudflareDNSReady())+"    ACME:    "+dim("DNS-01 default when ready"),
+		"Cloudflare:   "+badge(cloudflareDNSReady())+"    ACME:    "+ok("Let's Encrypt default"),
 	))
 	if app.update != nil && app.update.UpdateAvailable {
 		fmt.Println(panel("Update", "Current: "+warn(app.update.CurrentVersion), "Latest:  "+ok(app.update.LatestVersion)))
@@ -284,6 +284,7 @@ func (ui terminalUI) exposeDocker() error {
 		o.http2 = ui.confirm("Enable HTTP/2?", true)
 		o.acme = ui.confirm("Use acme.sh?", true)
 		if o.acme {
+			o.acmeCA = ui.askDefault("ACME CA", acme.DefaultCA)
 			if cloudflareDNSReady() && ui.confirm("Use saved Cloudflare DNS-01 credentials?", true) {
 				o.acmeMethod = "dns"
 				o.dnsProvider = "cloudflare"

@@ -185,6 +185,7 @@ func runQuickCreate(hostname, portValue string) error {
 		ssl:               true,
 		acme:              true,
 		acmeMethod:        "http",
+		acmeCA:            "letsencrypt",
 		redirectHTTPS:     true,
 		websocket:         true,
 		http2:             true,

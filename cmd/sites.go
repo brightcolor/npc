@@ -89,8 +89,8 @@ func showCommand() *cobra.Command {
 		if app.jsonOut {
 			return writeJSON(site)
 		}
-		fmt.Printf("Hostname: %s\nBackend: %s\nWebSocket: %v\nSSL: %v\nACME: %s\nConfig: %s\nCertificate: %s\nLast reload: %s\nLast nginx -t: %s\n",
-			site.Hostname, site.BackendURL(), site.WebSocket, site.SSL, site.ACMEMethod, site.ConfigPath,
+		fmt.Printf("Hostname: %s\nBackend: %s\nWebSocket: %v\nSSL: %v\nACME: %s\nACME CA: %s\nConfig: %s\nCertificate: %s\nLast reload: %s\nLast nginx -t: %s\n",
+			site.Hostname, site.BackendURL(), site.WebSocket, site.SSL, site.ACMEMethod, defaultString(site.ACMECA, "letsencrypt"), site.ConfigPath,
 			site.CertificatePath, site.LastReload, site.LastNginxTest)
 		return nil
 	}}

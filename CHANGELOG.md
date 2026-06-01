@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.23 - 2026-06-01
+
+- Made Let’s Encrypt the explicit default ACME CA across create, quick-create, and UI flows.
+- Added `--acme-ca` for per-site CA selection.
+- Added `npc acme default-ca [letsencrypt|zerossl|buypass]` to set acme.sh's default CA manually.
+- Stored the selected ACME CA in site metadata.
+
 ## 0.1.22 - 2026-06-01
 
 - Fixed Cloudflare DNS-01 handling for acme.sh.

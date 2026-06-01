@@ -27,3 +27,16 @@ func TestBuildSiteRequiresCertificateForManualSSL(t *testing.T) {
 		t.Fatal("expected missing certificate paths to fail")
 	}
 }
+
+func TestBuildSiteDefaultsACMECA(t *testing.T) {
+	site, err := buildSite(createOptions{
+		hostname: "app.example.com", backendHost: "127.0.0.1", backendPort: 3000,
+		backendScheme: "http", clientMaxBodySize: "100M", ssl: true, acme: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if site.ACMECA != "letsencrypt" {
+		t.Fatalf("expected letsencrypt default, got %q", site.ACMECA)
+	}
+}

@@ -1,19 +1,15 @@
 package cmd
 
 import (
-	"bufio"
-	"context"
 	"fmt"
 	"os"
 	"path"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/brightcolor/npc/internal/acme"
 	"github.com/brightcolor/npc/internal/backup"
 	"github.com/brightcolor/npc/internal/config"
-	"github.com/brightcolor/npc/internal/dnscheck"
 	"github.com/brightcolor/npc/internal/nginx"
 	"github.com/brightcolor/npc/internal/paths"
 	"github.com/brightcolor/npc/internal/renderer"
@@ -24,13 +20,13 @@ import (
 )
 
 type createOptions struct {
-	hostname, backendHost, backendScheme, profile   string
-	clientMaxBodySize, certPath, keyPath            string
-	acmeMethod, dnsProvider, email, securityHeaders string
-	backendPort                                     int
-	ssl, acme, redirectHTTPS, websocket, http2      bool
-	dryRun, force, noReload, noBackup               bool
-	nonInteractive, accessLog, errorLog, assumeYes  bool
+	hostname, backendHost, backendScheme, profile           string
+	clientMaxBodySize, certPath, keyPath                    string
+	acmeMethod, acmeCA, dnsProvider, email, securityHeaders string
+	backendPort                                             int
+	ssl, acme, redirectHTTPS, websocket, http2              bool
+	dryRun, force, noReload, noBackup                       bool
+	nonInteractive, accessLog, errorLog, assumeYes          bool
 }
 
 var createOpts createOptions
@@ -50,6 +46,7 @@ func bindCreateFlags(cmd *cobra.Command, o *createOptions) {
 	cmd.Flags().BoolVar(&o.ssl, "ssl", false, "enable HTTPS")
 	cmd.Flags().BoolVar(&o.acme, "acme", false, "use acme.sh")
 	cmd.Flags().StringVar(&o.acmeMethod, "acme-method", "", "acme method: dns, http, standalone, tls-alpn")
+	cmd.Flags().StringVar(&o.acmeCA, "acme-ca", acme.DefaultCA, "ACME CA: letsencrypt, zerossl, buypass")
 	cmd.Flags().StringVar(&o.dnsProvider, "dns-provider", "", "DNS-01 provider")
 	cmd.Flags().StringVar(&o.email, "email", "", "ACME account email")
 	cmd.Flags().BoolVar(&o.redirectHTTPS, "redirect-https", false, "redirect HTTP to HTTPS")
@@ -164,100 +161,6 @@ func executeCreate(o createOptions) error {
 	return nil
 }
 
-func ensureRuntimeDependencies(o createOptions) error {
-	if !system.Exists("nginx") {
-		if o.nonInteractive && !o.force && !o.assumeYes {
-			return validationError{fmt.Errorf("nginx is not installed; rerun interactively or use --force to install it")}
-		}
-		install := o.force || o.assumeYes
-		if !install {
-			install = promptConfirm("Nginx is not installed. Install it now with apt?", true)
-		}
-		if !install {
-			return validationError{fmt.Errorf("nginx is required before creating a site")}
-		}
-		fmt.Println("Installing Nginx...")
-		if err := nginx.InstallApt(true); err != nil {
-			return fmt.Errorf("nginx installation failed: %w", err)
-		}
-	}
-	if o.acme && !acme.Installed() {
-		if o.nonInteractive && !o.force && !o.assumeYes {
-			return validationError{fmt.Errorf("acme.sh is not installed; rerun interactively or use --force to install it")}
-		}
-		install := o.force || o.assumeYes
-		if !install {
-			install = promptConfirm("acme.sh is not installed. Install it now?", true)
-		}
-		if !install {
-			return validationError{fmt.Errorf("acme.sh is required when --acme is enabled")}
-		}
-		fmt.Println("Installing acme.sh...")
-		if err := acme.Install(o.email); err != nil {
-			return fmt.Errorf("acme.sh installation failed: %w", err)
-		}
-	}
-	return nil
-}
-
-func prepareHTTP01Certificate(site *config.Site) error {
-	fmt.Println("Checking DNS for HTTP-01 validation...")
-	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
-	defer cancel()
-	if result, err := dnscheck.VerifyHostnamePointsHere(ctx, site.Hostname); err != nil {
-		if result != nil {
-			return networkError{fmt.Errorf("%w", err)}
-		}
-		return networkError{err}
-	}
-	fmt.Println("Preparing HTTP-01 challenge config...")
-	if err := os.MkdirAll("/var/www/html", 0o755); err != nil {
-		return err
-	}
-	challenge := *site
-	challenge.SSL = false
-	challenge.RedirectHTTPS = false
-	challenge.ACME = true
-	challenge.ACMEMethod = "http"
-	content, err := renderer.RenderSite(&challenge)
-	if err != nil {
-		return err
-	}
-	if err := nginx.WriteSite(site.ConfigPath, content); err != nil {
-		return err
-	}
-	if err := nginx.Enable(site.ConfigPath, site.EnabledPath); err != nil {
-		return err
-	}
-	if err := nginx.EnsureServiceRunning(); err != nil {
-		return err
-	}
-	if out, err := nginx.Reload(); err != nil {
-		return nginxTestError{fmt.Errorf("nginx challenge config failed, certificate was not requested: %s", out)}
-	}
-	fmt.Println("Requesting certificate with acme.sh HTTP-01...")
-	if err := acme.IssueHTTP(site.Hostname, site.ACMEEmail); err != nil {
-		return err
-	}
-	fmt.Println("Installing certificate into /etc/npc/certs...")
-	if err := acme.InstallCert(site.Hostname, site.CertificatePath, site.CertificateKeyPath); err != nil {
-		return err
-	}
-	return nil
-}
-
-func prepareDNS01Certificate(site *config.Site) error {
-	fmt.Println("Requesting certificate with acme.sh DNS-01 provider", site.DNSProvider+"...")
-	if err := acme.IssueDNS(site.Hostname, site.DNSProvider, site.ACMEEmail); err != nil {
-		return err
-	}
-	fmt.Println("Installing certificate into /etc/npc/certs...")
-	if err := acme.InstallCert(site.Hostname, site.CertificatePath, site.CertificateKeyPath); err != nil {
-		return err
-	}
-	return nil
-}
-
 func missingCreateFields(o createOptions) []string {
 	applyEnvironmentDefaults(&o)
 	var missing []string
@@ -304,13 +207,19 @@ func buildSite(o createOptions) (*config.Site, error) {
 	if o.ssl && !o.acme && (o.certPath == "" || o.keyPath == "") {
 		return nil, fmt.Errorf("--cert-path and --key-path are required when --ssl is used without --acme")
 	}
+	if o.acme {
+		o.acmeCA = acme.NormalizeCA(o.acmeCA)
+		if err := acme.ValidateCA(o.acmeCA); err != nil {
+			return nil, err
+		}
+	}
 	configPath, enabledPath := nginx.SitePaths(o.hostname)
 	now := time.Now().UTC()
 	site := &config.Site{
 		Hostname: o.hostname, BackendScheme: o.backendScheme, BackendHost: o.backendHost,
 		BackendPort: o.backendPort, Profile: o.profile, WebSocket: o.websocket, HTTP2: o.http2,
 		ClientMaxBodySize: o.clientMaxBodySize, SSL: o.ssl, ACME: o.acme, ACMEMethod: normalizeACME(o.acmeMethod),
-		DNSProvider: o.dnsProvider, ACMEEmail: o.email, RedirectHTTPS: o.redirectHTTPS, SecurityHeaders: o.securityHeaders,
+		ACMECA: o.acmeCA, DNSProvider: o.dnsProvider, ACMEEmail: o.email, RedirectHTTPS: o.redirectHTTPS, SecurityHeaders: o.securityHeaders,
 		ConfigPath: configPath, EnabledPath: enabledPath, CertificatePath: o.certPath, CertificateKeyPath: o.keyPath,
 		CreatedAt: now, UpdatedAt: now, ManagedBy: "npc",
 	}
@@ -356,56 +265,6 @@ func applyProfileDefaults(o *createOptions) {
 	}
 }
 
-func promptCreate(o *createOptions) error {
-	r := bufio.NewReader(os.Stdin)
-	ask := func(label, def string) string {
-		if def != "" {
-			fmt.Printf("%s [%s]: ", label, def)
-		} else {
-			fmt.Printf("%s: ", label)
-		}
-		text, _ := r.ReadString('\n')
-		text = strings.TrimSpace(text)
-		if text == "" {
-			return def
-		}
-		return text
-	}
-	o.hostname = ask("Hostname", o.hostname)
-	o.backendHost = ask("Backend host", defaultString(o.backendHost, "127.0.0.1"))
-	port, err := strconv.Atoi(ask("Backend port", defaultString(strconv.Itoa(o.backendPort), "3000")))
-	if err != nil {
-		return err
-	}
-	o.backendPort = port
-	o.backendScheme = ask("Backend scheme (http/https)", defaultString(o.backendScheme, "http"))
-	o.profile = ask("Profile (generic/websocket/upload/streaming/docker/security-basic)", defaultString(o.profile, "generic"))
-	o.websocket = yes(ask("WebSocket support? (y/n)", boolDefault(o.websocket)))
-	o.ssl = yes(ask("Enable SSL/TLS? (y/n)", boolDefault(o.ssl)))
-	if o.ssl {
-		o.redirectHTTPS = yes(ask("Redirect HTTP to HTTPS? (y/n)", boolDefault(true)))
-		o.http2 = yes(ask("Enable HTTP/2? (y/n)", boolDefault(true)))
-		o.acme = yes(ask("Use acme.sh? (y/n)", boolDefault(o.acme)))
-		if o.acme {
-			if cloudflareDNSReady() && o.acmeMethod == "" {
-				o.acmeMethod = "dns"
-				o.dnsProvider = "cloudflare"
-				fmt.Println("Cloudflare DNS credentials found; DNS-01 is the default ACME method.")
-			}
-			o.acmeMethod = ask("ACME method (http/dns/standalone/tls-alpn)", defaultString(o.acmeMethod, "http"))
-			o.email = ask("ACME email, optional", o.email)
-			if o.acmeMethod == "dns" {
-				o.dnsProvider = ask("DNS provider", defaultString(o.dnsProvider, "cloudflare"))
-			}
-		} else {
-			o.certPath = ask("Fullchain path", o.certPath)
-			o.keyPath = ask("Private key path", o.keyPath)
-		}
-	}
-	o.clientMaxBodySize = ask("client_max_body_size", defaultString(o.clientMaxBodySize, "100M"))
-	return nil
-}
-
 func printCreatePlan(site *config.Site, content string) error {
 	plan := map[string]any{"site": site, "files": []string{site.ConfigPath, site.EnabledPath}, "nginx_config": content}
 	if app.jsonOut {
@@ -428,38 +287,4 @@ func normalizeACME(method string) string {
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
-}
-
-func defaultString(v, def string) string {
-	if v == "" || v == "0" {
-		return def
-	}
-	return v
-}
-
-func boolDefault(v bool) string {
-	if v {
-		return "y"
-	}
-	return "n"
-}
-
-func yes(v string) bool {
-	v = strings.ToLower(strings.TrimSpace(v))
-	return v == "y" || v == "yes" || v == "ja" || v == "true"
-}
-
-func promptConfirm(message string, def bool) bool {
-	suffix := " [Y/n]: "
-	if !def {
-		suffix = " [y/N]: "
-	}
-	fmt.Print(message + suffix)
-	reader := bufio.NewReader(os.Stdin)
-	text, _ := reader.ReadString('\n')
-	text = strings.ToLower(strings.TrimSpace(text))
-	if text == "" {
-		return def
-	}
-	return text == "y" || text == "yes" || text == "ja" || text == "true"
 }

@@ -13,8 +13,32 @@ import (
 
 func acmeCommand() *cobra.Command {
 	root := &cobra.Command{Use: "acme", Short: "Manage acme.sh helper configuration"}
-	root.AddCommand(dnsSetupCommand(), cloudflareSetupCommand())
+	root.AddCommand(dnsSetupCommand(), cloudflareSetupCommand(), acmeDefaultCACommand())
 	return root
+}
+
+func acmeDefaultCACommand() *cobra.Command {
+	return &cobra.Command{Use: "default-ca [letsencrypt|zerossl|buypass]", Args: maxOneArg, Short: "Set acme.sh default CA", RunE: func(cmd *cobra.Command, args []string) error {
+		ca := acme.DefaultCA
+		if len(args) == 1 {
+			ca = args[0]
+		}
+		if err := system.RequireRoot(); err != nil {
+			return permissionError{err}
+		}
+		if err := acme.SetDefaultCA(ca); err != nil {
+			return err
+		}
+		fmt.Println("acme.sh default CA set to", acme.NormalizeCA(ca))
+		return nil
+	}}
+}
+
+func maxOneArg(cmd *cobra.Command, args []string) error {
+	if len(args) > 1 {
+		return fmt.Errorf("accepts at most 1 arg, received %d", len(args))
+	}
+	return nil
 }
 
 func dnsSetupCommand() *cobra.Command {

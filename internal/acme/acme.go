@@ -77,7 +77,7 @@ func Install(email string) error {
 	if CommandPath() == "" {
 		return fmt.Errorf("acme.sh installer completed but acme.sh was not found; searched: %s; installer output: %s", strings.Join(searchPaths(), ", "), res.Output)
 	}
-	return nil
+	return SetDefaultCA(DefaultCA)
 }
 
 func searchPaths() []string {
@@ -105,12 +105,15 @@ func searchPaths() []string {
 	return paths
 }
 
-func IssueHTTP(hostname, email string) error {
+func IssueHTTP(hostname, email, ca string) error {
 	cmd := CommandPath()
 	if cmd == "" {
 		return fmt.Errorf("acme.sh was not found")
 	}
-	args := []string{"--issue", "--server", "letsencrypt", "-d", hostname, "-w", "/var/www/html"}
+	if err := ValidateCA(ca); err != nil {
+		return err
+	}
+	args := []string{"--issue", "--server", NormalizeCA(ca), "-d", hostname, "-w", "/var/www/html"}
 	if email != "" {
 		args = append(args, "--accountemail", email)
 	}
@@ -121,16 +124,19 @@ func IssueHTTP(hostname, email string) error {
 	return nil
 }
 
-func IssueDNS(hostname, provider, email string) error {
+func IssueDNS(hostname, provider, email, ca string) error {
 	cmd := CommandPath()
 	if cmd == "" {
 		return fmt.Errorf("acme.sh was not found")
+	}
+	if err := ValidateCA(ca); err != nil {
+		return err
 	}
 	env, err := secrets.ReadEnv(provider)
 	if err != nil {
 		return err
 	}
-	args := []string{"--issue", "--server", "letsencrypt", "-d", hostname, "--dns", dnsFlag(provider)}
+	args := []string{"--issue", "--server", NormalizeCA(ca), "-d", hostname, "--dns", dnsFlag(provider)}
 	if provider == "cloudflare" {
 		args = append(args, "--dnssleep", "30")
 	}
@@ -189,18 +195,19 @@ func DiagnoseOutput(output string) string {
 	return "\nSuggested checks:\n- " + strings.Join(hints, "\n- ")
 }
 
-func IssueCommand(hostname, method, provider, email string) []string {
+func IssueCommand(hostname, method, provider, email, ca string) []string {
+	server := NormalizeCA(ca)
 	switch method {
 	case "http":
-		return []string{"acme.sh", "--issue", "--server", "letsencrypt", "-d", hostname, "-w", "/var/www/html", "--accountemail", email}
+		return []string{"acme.sh", "--issue", "--server", server, "-d", hostname, "-w", "/var/www/html", "--accountemail", email}
 	case "dns":
-		return []string{"acme.sh", "--issue", "--server", "letsencrypt", "-d", hostname, "--dns", dnsFlag(provider), "--accountemail", email}
+		return []string{"acme.sh", "--issue", "--server", server, "-d", hostname, "--dns", dnsFlag(provider), "--accountemail", email}
 	case "standalone":
-		return []string{"acme.sh", "--issue", "--server", "letsencrypt", "-d", hostname, "--standalone", "--accountemail", email}
+		return []string{"acme.sh", "--issue", "--server", server, "-d", hostname, "--standalone", "--accountemail", email}
 	case "tls-alpn":
-		return []string{"acme.sh", "--issue", "--server", "letsencrypt", "-d", hostname, "--alpn", "--accountemail", email}
+		return []string{"acme.sh", "--issue", "--server", server, "-d", hostname, "--alpn", "--accountemail", email}
 	default:
-		return []string{"acme.sh", "--issue", "--server", "letsencrypt", "-d", hostname, "--accountemail", email}
+		return []string{"acme.sh", "--issue", "--server", server, "-d", hostname, "--accountemail", email}
 	}
 }
 
