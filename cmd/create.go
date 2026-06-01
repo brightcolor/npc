@@ -71,6 +71,7 @@ func bindCreateFlags(cmd *cobra.Command, o *createOptions) {
 func runCreate(cmd *cobra.Command, args []string) error {
 	o := createOpts
 	if !o.nonInteractive {
+		applyEnvironmentDefaults(&o)
 		if err := promptCreate(&o); err != nil {
 			return err
 		}
@@ -81,6 +82,7 @@ func runCreate(cmd *cobra.Command, args []string) error {
 }
 
 func executeCreate(o createOptions) error {
+	applyEnvironmentDefaults(&o)
 	site, err := buildSite(o)
 	if err != nil {
 		return validationError{err}
@@ -257,6 +259,7 @@ func prepareDNS01Certificate(site *config.Site) error {
 }
 
 func missingCreateFields(o createOptions) []string {
+	applyEnvironmentDefaults(&o)
 	var missing []string
 	if o.hostname == "" {
 		missing = append(missing, "--hostname")
@@ -384,10 +387,15 @@ func promptCreate(o *createOptions) error {
 		o.http2 = yes(ask("Enable HTTP/2? (y/n)", boolDefault(true)))
 		o.acme = yes(ask("Use acme.sh? (y/n)", boolDefault(o.acme)))
 		if o.acme {
+			if cloudflareDNSReady() && o.acmeMethod == "" {
+				o.acmeMethod = "dns"
+				o.dnsProvider = "cloudflare"
+				fmt.Println("Cloudflare DNS credentials found; DNS-01 is the default ACME method.")
+			}
 			o.acmeMethod = ask("ACME method (http/dns/standalone/tls-alpn)", defaultString(o.acmeMethod, "http"))
-			o.email = ask("ACME email", o.email)
+			o.email = ask("ACME email, optional", o.email)
 			if o.acmeMethod == "dns" {
-				o.dnsProvider = ask("DNS provider", o.dnsProvider)
+				o.dnsProvider = ask("DNS provider", defaultString(o.dnsProvider, "cloudflare"))
 			}
 		} else {
 			o.certPath = ask("Fullchain path", o.certPath)

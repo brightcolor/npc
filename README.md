@@ -53,6 +53,8 @@ Managed sites can also be edited and deleted from the UI. Editing lets you chang
 
 The UI includes a Cloudflare DNS-01 setup flow. It stores the Cloudflare API token, account ID, and optional zone ID under `/etc/npc/secrets/cloudflare.env` with mode `0600`. Secrets are not compiled into npc and are not printed back in the UI.
 
+When a valid Cloudflare secret file already exists, npc treats Cloudflare DNS-01 as the preferred ACME default. The UI offers to use the saved Cloudflare credentials, `npc create` defaults to `--acme-method dns --dns-provider cloudflare`, and the ACME account email prompt becomes optional.
+
 On startup, the UI checks GitHub Releases for a newer npc version. If an update is available, it shows the current version, the latest version, and the release changelog before opening the main menu. The menu then includes an **Upgrade npc** entry.
 
 At startup, the UI checks for Nginx and `acme.sh`. If either tool is missing, `npc` asks whether it should install it. Nginx is installed through `apt`; `acme.sh` is installed through the official installer. Installation requires root, so start the UI with `sudo npc` when you want npc to install missing dependencies.
@@ -306,6 +308,8 @@ sudo npc create \
 ```
 
 For `--acme-method dns`, npc loads `/etc/npc/secrets/<provider>.env`, passes those variables only to the `acme.sh` process, requests the certificate, installs it under `/etc/npc/certs/<hostname>/`, then renders the final HTTPS Nginx config.
+
+If `/etc/npc/secrets/cloudflare.env` exists with mode `0600` and contains non-empty Cloudflare values, npc uses Cloudflare DNS-01 as the default ACME path. That means DNS validation is offered first in the UI and in interactive `npc create`; the ACME account email is optional in that flow.
 
 ### Firewall Suggestions
 

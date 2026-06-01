@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.21 - 2026-06-01
+
+- Prefer saved Cloudflare DNS-01 credentials automatically when `/etc/npc/secrets/cloudflare.env` is present and secure.
+- Make Cloudflare DNS-01 the default ACME method in interactive create and Docker expose flows when credentials are available.
+- Keep ACME account email optional when using saved Cloudflare credentials.
+
 ## 0.1.20 - 2026-06-01
 
 - Improved the terminal UI styling with a stronger header, dashboard panels, action numbering, and clearer runtime/update sections.

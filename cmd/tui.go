@@ -210,6 +210,7 @@ func (ui terminalUI) dashboard() {
 		"Nginx:        "+badge(system.Exists("nginx"))+"    Service: "+badge(nginx.ServiceActive()),
 		"Docker:       "+badge(docker.Installed())+"    Sites:   "+fmt.Sprintf("%d active / %d total", active, len(cfg.Sites)),
 		"Config:       "+ok("tracked")+"    Guard:   "+ok("nginx -t before reload"),
+		"Cloudflare:   "+badge(cloudflareDNSReady())+"    ACME:    "+dim("DNS-01 default when ready"),
 	))
 	if app.update != nil && app.update.UpdateAvailable {
 		fmt.Println(panel("Update", "Current: "+warn(app.update.CurrentVersion), "Latest:  "+ok(app.update.LatestVersion)))
@@ -283,10 +284,15 @@ func (ui terminalUI) exposeDocker() error {
 		o.http2 = ui.confirm("Enable HTTP/2?", true)
 		o.acme = ui.confirm("Use acme.sh?", true)
 		if o.acme {
-			o.acmeMethod = ui.askDefault("ACME method (http/dns/standalone/tls-alpn)", "http")
-			o.email = ui.askRequired("ACME account email")
+			if cloudflareDNSReady() && ui.confirm("Use saved Cloudflare DNS-01 credentials?", true) {
+				o.acmeMethod = "dns"
+				o.dnsProvider = "cloudflare"
+			} else {
+				o.acmeMethod = ui.askDefault("ACME method (http/dns/standalone/tls-alpn)", "http")
+			}
+			o.email = ui.askDefault("ACME account email, optional", "")
 			if o.acmeMethod == "dns" {
-				o.dnsProvider = ui.askRequired("DNS provider")
+				o.dnsProvider = ui.askDefault("DNS provider", defaultString(o.dnsProvider, "cloudflare"))
 			}
 		} else {
 			o.certPath = ui.askRequired("Fullchain path")
@@ -302,6 +308,7 @@ func (ui terminalUI) exposeDocker() error {
 }
 
 func (ui terminalUI) previewAndRun(o createOptions) error {
+	applyEnvironmentDefaults(&o)
 	site, err := buildSite(o)
 	if err != nil {
 		return validationError{err}
