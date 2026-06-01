@@ -52,7 +52,7 @@ func promptTLSOptions(o *createOptions, ask func(string, string) string) {
 		o.keyPath = ask("Private key path", o.keyPath)
 		return
 	}
-	o.acmeCA = ask("ACME CA (letsencrypt/zerossl/buypass)", defaultString(o.acmeCA, acme.DefaultCA))
+	o.acmeCA = ask("ACME CA (letsencrypt/buypass)", defaultString(o.acmeCA, acme.DefaultCA))
 	if cloudflareDNSReady() && o.acmeMethod == "" {
 		o.acmeMethod = "dns"
 		o.dnsProvider = "cloudflare"

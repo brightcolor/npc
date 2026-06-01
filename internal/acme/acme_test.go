@@ -21,8 +21,14 @@ func TestIssueCommandUsesLetsEncrypt(t *testing.T) {
 }
 
 func TestIssueCommandAllowsManualCA(t *testing.T) {
-	cmd := IssueCommand("app.example.com", "http", "", "", "zerossl")
-	if cmd[3] != "zerossl" {
+	cmd := IssueCommand("app.example.com", "http", "", "", "buypass")
+	if cmd[3] != "buypass" {
 		t.Fatalf("expected manual CA in command: %#v", cmd)
+	}
+}
+
+func TestValidateCARejectsUnsupportedCA(t *testing.T) {
+	if err := ValidateCA("zerossl"); err == nil {
+		t.Fatal("expected unsupported CA to be rejected")
 	}
 }

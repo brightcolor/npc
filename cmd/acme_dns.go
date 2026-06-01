@@ -18,7 +18,7 @@ func acmeCommand() *cobra.Command {
 }
 
 func acmeDefaultCACommand() *cobra.Command {
-	return &cobra.Command{Use: "default-ca [letsencrypt|zerossl|buypass]", Args: maxOneArg, Short: "Set acme.sh default CA", RunE: func(cmd *cobra.Command, args []string) error {
+	return &cobra.Command{Use: "default-ca [letsencrypt|buypass]", Args: maxOneArg, Short: "Set acme.sh default CA", RunE: func(cmd *cobra.Command, args []string) error {
 		ca := acme.DefaultCA
 		if len(args) == 1 {
 			ca = args[0]

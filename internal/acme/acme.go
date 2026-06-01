@@ -113,6 +113,9 @@ func IssueHTTP(hostname, email, ca string) error {
 	if err := ValidateCA(ca); err != nil {
 		return err
 	}
+	if err := SetDefaultCA(ca); err != nil {
+		return err
+	}
 	args := []string{"--issue", "--server", NormalizeCA(ca), "-d", hostname, "-w", "/var/www/html"}
 	if email != "" {
 		args = append(args, "--accountemail", email)
@@ -130,6 +133,9 @@ func IssueDNS(hostname, provider, email, ca string) error {
 		return fmt.Errorf("acme.sh was not found")
 	}
 	if err := ValidateCA(ca); err != nil {
+		return err
+	}
+	if err := SetDefaultCA(ca); err != nil {
 		return err
 	}
 	env, err := secrets.ReadEnv(provider)

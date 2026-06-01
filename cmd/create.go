@@ -46,7 +46,7 @@ func bindCreateFlags(cmd *cobra.Command, o *createOptions) {
 	cmd.Flags().BoolVar(&o.ssl, "ssl", false, "enable HTTPS")
 	cmd.Flags().BoolVar(&o.acme, "acme", false, "use acme.sh")
 	cmd.Flags().StringVar(&o.acmeMethod, "acme-method", "", "acme method: dns, http, standalone, tls-alpn")
-	cmd.Flags().StringVar(&o.acmeCA, "acme-ca", acme.DefaultCA, "ACME CA: letsencrypt, zerossl, buypass")
+	cmd.Flags().StringVar(&o.acmeCA, "acme-ca", acme.DefaultCA, "ACME CA: letsencrypt or buypass")
 	cmd.Flags().StringVar(&o.dnsProvider, "dns-provider", "", "DNS-01 provider")
 	cmd.Flags().StringVar(&o.email, "email", "", "ACME account email")
 	cmd.Flags().BoolVar(&o.redirectHTTPS, "redirect-https", false, "redirect HTTP to HTTPS")

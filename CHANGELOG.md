@@ -1,10 +1,16 @@
 # Changelog
 
+## 0.1.24 - 2026-06-01
+
+- Removed the unwanted alternative CA from supported and documented ACME CA choices.
+- Reapply the selected acme.sh default CA before each certificate issuance; Let’s Encrypt remains the default.
+- Updated CLI help and README examples to avoid suggesting the unwanted CA.
+
 ## 0.1.23 - 2026-06-01
 
 - Made Let’s Encrypt the explicit default ACME CA across create, quick-create, and UI flows.
 - Added `--acme-ca` for per-site CA selection.
-- Added `npc acme default-ca [letsencrypt|zerossl|buypass]` to set acme.sh's default CA manually.
+- Added `npc acme default-ca [letsencrypt|buypass]` to set acme.sh's default CA manually.
 - Stored the selected ACME CA in site metadata.
 
 ## 0.1.22 - 2026-06-01
@@ -12,7 +18,7 @@
 - Fixed Cloudflare DNS-01 handling for acme.sh.
 - Accept `CF_Token` plus `CF_Zone_ID` or `CF_Account_ID`; legacy `CF_Key` plus `CF_Email` remains supported.
 - Parse shell-style env files with optional `export` and quoted values.
-- Use Let’s Encrypt explicitly for ACME issuance to avoid ZeroSSL email/account prompts in DNS-01 flows.
+- Use Let’s Encrypt explicitly for ACME issuance to avoid third-party account prompts in DNS-01 flows.
 
 ## 0.1.21 - 2026-06-01
 

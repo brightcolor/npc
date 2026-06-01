@@ -55,7 +55,7 @@ The UI includes a Cloudflare DNS-01 setup flow. It stores the Cloudflare API tok
 
 When a valid Cloudflare secret file already exists, npc treats Cloudflare DNS-01 as the preferred ACME default. The UI offers to use the saved Cloudflare credentials, `npc create` defaults to `--acme-method dns --dns-provider cloudflare`, and the ACME account email prompt becomes optional.
 
-Let’s Encrypt is the default ACME CA. `npc` also sets acme.sh's default CA to Let’s Encrypt after installing acme.sh. Use `--acme-ca zerossl` or `--acme-ca buypass` when a site should use another supported CA.
+Let’s Encrypt is the default ACME CA. `npc` also sets acme.sh's default CA to Let’s Encrypt after installing acme.sh and before ACME issuance. Use `--acme-ca buypass` only when a site should use Buypass instead.
 
 On startup, the UI checks GitHub Releases for a newer npc version. If an update is available, it shows the current version, the latest version, and the release changelog before opening the main menu. The menu then includes an **Upgrade npc** entry.
 
@@ -315,13 +315,13 @@ For `--acme-method dns`, npc loads `/etc/npc/secrets/<provider>.env`, passes tho
 
 If `/etc/npc/secrets/cloudflare.env` exists with mode `0600` and contains non-empty Cloudflare values, npc uses Cloudflare DNS-01 as the default ACME path. That means DNS validation is offered first in the UI and in interactive `npc create`; the ACME account email is optional in that flow.
 
-For Cloudflare DNS-01, npc calls acme.sh with `--server letsencrypt` by default so the flow does not depend on ZeroSSL account email behavior.
+For Cloudflare DNS-01, npc calls acme.sh with `--server letsencrypt` by default so the flow always uses the intended CA unless another supported CA is explicitly selected.
 
 To set the acme.sh default CA manually:
 
 ```bash
 sudo npc acme default-ca
-sudo npc acme default-ca zerossl
+sudo npc acme default-ca letsencrypt
 ```
 
 ### Firewall Suggestions
@@ -383,7 +383,6 @@ Let’s Encrypt is the default CA for all ACME issue commands:
 
 ```bash
 sudo npc create --hostname app.example.com --backend-host 127.0.0.1 --backend-port 3000 --ssl --acme
-sudo npc create --hostname app.example.com --backend-host 127.0.0.1 --backend-port 3000 --ssl --acme --acme-ca zerossl
 sudo npc acme default-ca letsencrypt
 ```
 

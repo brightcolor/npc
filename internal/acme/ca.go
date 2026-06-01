@@ -14,8 +14,6 @@ func NormalizeCA(ca string) string {
 	switch ca {
 	case "", "letsencrypt", "le":
 		return "letsencrypt"
-	case "zerossl":
-		return "zerossl"
 	case "buypass":
 		return "buypass"
 	default:
@@ -25,10 +23,10 @@ func NormalizeCA(ca string) string {
 
 func ValidateCA(ca string) error {
 	switch NormalizeCA(ca) {
-	case "letsencrypt", "zerossl", "buypass":
+	case "letsencrypt", "buypass":
 		return nil
 	default:
-		return fmt.Errorf("unsupported ACME CA %q; use letsencrypt, zerossl, or buypass", ca)
+		return fmt.Errorf("unsupported ACME CA %q; use letsencrypt or buypass", ca)
 	}
 }
 
