@@ -270,9 +270,10 @@ Cloudflare has a dedicated setup command:
 ```bash
 sudo npc acme cloudflare-setup \
   --token <cloudflare-api-token> \
-  --account-id <cloudflare-account-id> \
-  --zone-id <optional-zone-id>
+  --zone-id <cloudflare-zone-id>
 ```
+
+Alternatively, use `--account-id <cloudflare-account-id>` instead of `--zone-id` when the token is account-scoped for multiple zones. npc accepts `CF_Token` plus either `CF_Zone_ID` or `CF_Account_ID`. Legacy `CF_Key` plus `CF_Email` is also supported when the values are already present in the env file.
 
 For interactive use, prefer the terminal UI:
 
@@ -310,6 +311,8 @@ sudo npc create \
 For `--acme-method dns`, npc loads `/etc/npc/secrets/<provider>.env`, passes those variables only to the `acme.sh` process, requests the certificate, installs it under `/etc/npc/certs/<hostname>/`, then renders the final HTTPS Nginx config.
 
 If `/etc/npc/secrets/cloudflare.env` exists with mode `0600` and contains non-empty Cloudflare values, npc uses Cloudflare DNS-01 as the default ACME path. That means DNS validation is offered first in the UI and in interactive `npc create`; the ACME account email is optional in that flow.
+
+For Cloudflare DNS-01, npc calls acme.sh with `--server letsencrypt` so the flow does not depend on ZeroSSL account email behavior.
 
 ### Firewall Suggestions
 

@@ -8,7 +8,14 @@ func TestIssueCommandDNS(t *testing.T) {
 	for _, part := range cmd {
 		joined += part + " "
 	}
-	if joined == "" || cmd[0] != "acme.sh" || cmd[4] != "--dns" || cmd[5] != "dns_cf" {
+	if joined == "" || cmd[0] != "acme.sh" || cmd[6] != "--dns" || cmd[7] != "dns_cf" {
 		t.Fatalf("unexpected command: %#v", cmd)
+	}
+}
+
+func TestIssueCommandUsesLetsEncrypt(t *testing.T) {
+	cmd := IssueCommand("app.example.com", "dns", "cloudflare", "")
+	if cmd[2] != "--server" || cmd[3] != "letsencrypt" {
+		t.Fatalf("expected letsencrypt server in command: %#v", cmd)
 	}
 }

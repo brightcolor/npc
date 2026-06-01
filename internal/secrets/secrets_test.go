@@ -19,3 +19,25 @@ func TestSecureMode(t *testing.T) {
 		t.Fatal("expected 0600 mode to be secure")
 	}
 }
+
+func TestCloudflareEnvAcceptsTokenAndZone(t *testing.T) {
+	env, err := cloudflareEnv("test.env", map[string]string{
+		"CF_Token":   "token",
+		"CF_Zone_ID": "zone",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !containsEnv(env, "CF_Token=token") || !containsEnv(env, "CF_Zone_ID=zone") {
+		t.Fatalf("unexpected env: %#v", env)
+	}
+}
+
+func containsEnv(env []string, want string) bool {
+	for _, item := range env {
+		if item == want {
+			return true
+		}
+	}
+	return false
+}

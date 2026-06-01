@@ -51,7 +51,7 @@ func dnsSetupCommand() *cobra.Command {
 func dnsProviderTemplate(provider string) (string, error) {
 	switch provider {
 	case "cloudflare":
-		return "CF_Token=\nCF_Account_ID=\n", nil
+		return "CF_Token=\nCF_Zone_ID=\nCF_Account_ID=\n", nil
 	case "hetzner":
 		return "HETZNER_Token=\n", nil
 	case "netcup":
@@ -74,8 +74,8 @@ func dnsProviderTemplate(provider string) (string, error) {
 func cloudflareSetupCommand() *cobra.Command {
 	var token, accountID, zoneID string
 	cmd := &cobra.Command{Use: "cloudflare-setup", Short: "Write Cloudflare DNS-01 credentials", RunE: func(cmd *cobra.Command, args []string) error {
-		if token == "" || accountID == "" {
-			return validationError{fmt.Errorf("--token and --account-id are required")}
+		if token == "" || (accountID == "" && zoneID == "") {
+			return validationError{fmt.Errorf("--token and either --zone-id or --account-id are required")}
 		}
 		if err := system.RequireRoot(); err != nil {
 			return permissionError{err}

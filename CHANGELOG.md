@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.22 - 2026-06-01
+
+- Fixed Cloudflare DNS-01 handling for acme.sh.
+- Accept `CF_Token` plus `CF_Zone_ID` or `CF_Account_ID`; legacy `CF_Key` plus `CF_Email` remains supported.
+- Parse shell-style env files with optional `export` and quoted values.
+- Use Let’s Encrypt explicitly for ACME issuance to avoid ZeroSSL email/account prompts in DNS-01 flows.
+
 ## 0.1.21 - 2026-06-01
 
 - Prefer saved Cloudflare DNS-01 credentials automatically when `/etc/npc/secrets/cloudflare.env` is present and secure.
