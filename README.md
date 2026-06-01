@@ -51,6 +51,8 @@ The UI shows a dashboard with Nginx, Docker, and managed-site status before each
 
 Managed sites can also be edited and deleted from the UI. Editing lets you change the backend host, port, scheme, profile, body size, WebSocket headers, security header profile, and per-site logs before reviewing the rendered Nginx config. Deleting always disables the site first, offers a backup, and then lets you choose whether to remove the Nginx config, npc metadata, and certificate files.
 
+The UI includes a Cloudflare DNS-01 setup flow. It stores the Cloudflare API token, account ID, and optional zone ID under `/etc/npc/secrets/cloudflare.env` with mode `0600`. Secrets are not compiled into npc and are not printed back in the UI.
+
 On startup, the UI checks GitHub Releases for a newer npc version. If an update is available, it shows the current version, the latest version, and the release changelog before opening the main menu. The menu then includes an **Upgrade npc** entry.
 
 At startup, the UI checks for Nginx and `acme.sh`. If either tool is missing, `npc` asks whether it should install it. Nginx is installed through `apt`; `acme.sh` is installed through the official installer. Installation requires root, so start the UI with `sudo npc` when you want npc to install missing dependencies.
@@ -261,6 +263,23 @@ sudo npc acme dns-setup cloudflare
 npc acme dns-setup route53 --print-template
 ```
 
+Cloudflare has a dedicated setup command:
+
+```bash
+sudo npc acme cloudflare-setup \
+  --token <cloudflare-api-token> \
+  --account-id <cloudflare-account-id> \
+  --zone-id <optional-zone-id>
+```
+
+For interactive use, prefer the terminal UI:
+
+```bash
+sudo npc
+```
+
+Then choose **Configure Cloudflare DNS-01**. The UI hides the token while you type it.
+
 Supported providers:
 
 - `cloudflare`
@@ -285,6 +304,8 @@ sudo npc create \
   --dns-provider cloudflare \
   --non-interactive
 ```
+
+For `--acme-method dns`, npc loads `/etc/npc/secrets/<provider>.env`, passes those variables only to the `acme.sh` process, requests the certificate, installs it under `/etc/npc/certs/<hostname>/`, then renders the final HTTPS Nginx config.
 
 ### Firewall Suggestions
 

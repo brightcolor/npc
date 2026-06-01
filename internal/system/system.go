@@ -34,6 +34,16 @@ func Run(name string, args ...string) (Result, error) {
 	return Result{Command: name, Args: args, Output: strings.TrimSpace(out.String())}, err
 }
 
+func RunEnv(env []string, name string, args ...string) (Result, error) {
+	cmd := exec.Command(name, args...)
+	cmd.Env = append(os.Environ(), env...)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &out
+	err := cmd.Run()
+	return Result{Command: name, Args: args, Output: strings.TrimSpace(out.String())}, err
+}
+
 func Exists(name string) bool {
 	_, err := exec.LookPath(name)
 	return err == nil

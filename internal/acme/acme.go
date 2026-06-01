@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/brightcolor/npc/internal/fetch"
+	"github.com/brightcolor/npc/internal/secrets"
 	"github.com/brightcolor/npc/internal/system"
 )
 
@@ -116,6 +117,26 @@ func IssueHTTP(hostname, email string) error {
 	res, err := system.Run(cmd, args...)
 	if err != nil {
 		return fmt.Errorf("acme.sh issue failed: %s%s", res.Output, DiagnoseOutput(res.Output))
+	}
+	return nil
+}
+
+func IssueDNS(hostname, provider, email string) error {
+	cmd := CommandPath()
+	if cmd == "" {
+		return fmt.Errorf("acme.sh was not found")
+	}
+	env, err := secrets.ReadEnv(provider)
+	if err != nil {
+		return err
+	}
+	args := []string{"--issue", "-d", hostname, "--dns", dnsFlag(provider)}
+	if email != "" {
+		args = append(args, "--accountemail", email)
+	}
+	res, err := system.RunEnv(env, cmd, args...)
+	if err != nil {
+		return fmt.Errorf("acme.sh DNS issue failed: %s%s", res.Output, DiagnoseOutput(res.Output))
 	}
 	return nil
 }

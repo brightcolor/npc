@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 
@@ -34,6 +35,7 @@ func runTUI(cmd *cobra.Command, args []string) error {
 		options := []menuOption{
 			{Title: "Expose a Docker container", Desc: "Scan running containers and publish one through Nginx"},
 			{Title: "Create a custom reverse proxy", Desc: "Enter hostname, backend, TLS, logs, and proxy options manually"},
+			{Title: "Configure Cloudflare DNS-01", Desc: "Save Cloudflare API settings for automatic ACME DNS validation"},
 			{Title: "List managed sites", Desc: "Show sites tracked in /etc/npc/config.yaml"},
 			{Title: "Edit a managed site", Desc: "Change backend, profile, WebSocket, body size, and logging"},
 			{Title: "Delete a managed site", Desc: "Disable a site and optionally remove config, metadata, and certificates"},
@@ -67,21 +69,26 @@ func runTUI(cmd *cobra.Command, args []string) error {
 				return err
 			}
 		case 2:
-			if err := listCommand().RunE(cmd, args); err != nil {
+			if err := ui.configureCloudflare(); err != nil {
 				return err
 			}
 			ui.pause()
 		case 3:
-			if err := ui.editManagedSite(); err != nil {
+			if err := listCommand().RunE(cmd, args); err != nil {
 				return err
 			}
 			ui.pause()
 		case 4:
-			if err := ui.deleteManagedSite(); err != nil {
+			if err := ui.editManagedSite(); err != nil {
 				return err
 			}
 			ui.pause()
 		case 5:
+			if err := ui.deleteManagedSite(); err != nil {
+				return err
+			}
+			ui.pause()
+		case 6:
 			return statusCommand().RunE(cmd, args)
 		default:
 			return nil
@@ -182,11 +189,11 @@ func newTerminalUI() terminalUI {
 
 func (ui terminalUI) header() {
 	fmt.Print("\033[2J\033[H")
-	fmt.Println(cyan("+------------------------------------------------------------------------------+"))
-	fmt.Println(cyan("|") + " " + bold("npc") + "  Nginx Proxy Configurator" + strings.Repeat(" ", 45) + cyan("|"))
-	fmt.Println(cyan("|") + " " + dim("Reverse proxies, TLS, Docker discovery, and safe Nginx reloads") + strings.Repeat(" ", 12) + cyan("|"))
-	fmt.Println(cyan("+------------------------------------------------------------------------------+"))
-	fmt.Printf("  %s  %s  %s\n", ok("SAFE DEFAULTS"), cyan("DRY RUN READY"), dim("Backups before writes. nginx -t before reloads."))
+	fmt.Println(accent("+------------------------------------------------------------------------------+"))
+	fmt.Println(accent("|") + " " + bold("npc") + "  " + cyan("Nginx Proxy Configurator") + strings.Repeat(" ", 44) + accent("|"))
+	fmt.Println(accent("|") + " " + dim("Reverse proxies, TLS automation, Docker discovery, safe reloads") + strings.Repeat(" ", 9) + accent("|"))
+	fmt.Println(accent("+------------------------------------------------------------------------------+"))
+	fmt.Printf("  %s  %s  %s  %s\n", pill("SAFE"), pill("TLS"), pill("DOCKER"), dim("Backups before writes. nginx -t before reloads."))
 	fmt.Println()
 }
 
@@ -199,13 +206,15 @@ func (ui terminalUI) dashboard() {
 		}
 	}
 	fmt.Println(section("Control Plane"))
-	fmt.Printf("  %-16s %-14s %-16s %-14s\n", "Nginx", badge(system.Exists("nginx")), "Service", badge(nginx.ServiceActive()))
-	fmt.Printf("  %-16s %-14s %-16s %s\n", "Docker", badge(docker.Installed()), "Sites", fmt.Sprintf("%d active / %d total", active, len(cfg.Sites)))
-	fmt.Printf("  %-16s %-14s %-16s %s\n", "Config", ok("TRACKED"), "Reload guard", ok("nginx -t"))
+	fmt.Println(panel("Runtime",
+		"Nginx:        "+badge(system.Exists("nginx"))+"    Service: "+badge(nginx.ServiceActive()),
+		"Docker:       "+badge(docker.Installed())+"    Sites:   "+fmt.Sprintf("%d active / %d total", active, len(cfg.Sites)),
+		"Config:       "+ok("tracked")+"    Guard:   "+ok("nginx -t before reload"),
+	))
 	if app.update != nil && app.update.UpdateAvailable {
-		fmt.Printf("  %-16s %-14s %-16s %s\n", "Version", warn(app.update.CurrentVersion), "Latest", ok(app.update.LatestVersion))
+		fmt.Println(panel("Update", "Current: "+warn(app.update.CurrentVersion), "Latest:  "+ok(app.update.LatestVersion)))
 	} else {
-		fmt.Printf("  %-16s %-14s %-16s %s\n", "Version", ok(app.build.Version), "Latest", dim("checked"))
+		fmt.Println(dim("  Version " + app.build.Version + " | latest checked"))
 	}
 	if len(cfg.Sites) == 0 {
 		fmt.Println()
@@ -330,9 +339,9 @@ func (ui terminalUI) actionMenu(title string, options []menuOption) int {
 	for {
 		fmt.Println(section(title))
 		for i, option := range options {
-			number := fmt.Sprintf("[%d]", i+1)
-			fmt.Printf("  %s %s\n", cyan(number), bold(option.Title))
-			fmt.Printf("      %s\n", dim(option.Desc))
+			number := fmt.Sprintf("%02d", i+1)
+			fmt.Printf("  %s %s\n", accent("["+number+"]"), bold(option.Title))
+			fmt.Printf("       %s\n", dim(option.Desc))
 		}
 		fmt.Println()
 		fmt.Print(dim("Select an option: "))
@@ -386,6 +395,15 @@ func (ui terminalUI) askDefault(label, def string) string {
 		return def
 	}
 	return text
+}
+
+func (ui terminalUI) askSecret(label string) string {
+	fmt.Print(label + ": ")
+	disableEcho()
+	text, _ := ui.reader.ReadString('\n')
+	enableEcho()
+	fmt.Println()
+	return strings.TrimSpace(text)
 }
 
 func (ui terminalUI) confirm(label string, def bool) bool {
@@ -455,3 +473,19 @@ func bold(s string) string { return "\033[1m" + s + "\033[0m" }
 func cyan(s string) string { return "\033[36m" + s + "\033[0m" }
 func dim(s string) string  { return "\033[2m" + s + "\033[0m" }
 func warn(s string) string { return "\033[33m" + s + "\033[0m" }
+func accent(s string) string {
+	return "\033[35m" + s + "\033[0m"
+}
+func pill(s string) string { return accent("[") + ok(s) + accent("]") }
+
+func disableEcho() {
+	cmd := exec.Command("stty", "-echo")
+	cmd.Stdin = os.Stdin
+	_ = cmd.Run()
+}
+
+func enableEcho() {
+	cmd := exec.Command("stty", "echo")
+	cmd.Stdin = os.Stdin
+	_ = cmd.Run()
+}

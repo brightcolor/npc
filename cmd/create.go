@@ -125,6 +125,15 @@ func executeCreate(o createOptions) error {
 			return err
 		}
 	}
+	if site.SSL && site.ACME && site.ACMEMethod == "dns" {
+		if err := prepareDNS01Certificate(site); err != nil {
+			return err
+		}
+		content, err = renderer.RenderSite(site)
+		if err != nil {
+			return err
+		}
+	}
 	if err := nginx.WriteSite(site.ConfigPath, content); err != nil {
 		return err
 	}
@@ -226,6 +235,18 @@ func prepareHTTP01Certificate(site *config.Site) error {
 	}
 	fmt.Println("Requesting certificate with acme.sh HTTP-01...")
 	if err := acme.IssueHTTP(site.Hostname, site.ACMEEmail); err != nil {
+		return err
+	}
+	fmt.Println("Installing certificate into /etc/npc/certs...")
+	if err := acme.InstallCert(site.Hostname, site.CertificatePath, site.CertificateKeyPath); err != nil {
+		return err
+	}
+	return nil
+}
+
+func prepareDNS01Certificate(site *config.Site) error {
+	fmt.Println("Requesting certificate with acme.sh DNS-01 provider", site.DNSProvider+"...")
+	if err := acme.IssueDNS(site.Hostname, site.DNSProvider, site.ACMEEmail); err != nil {
 		return err
 	}
 	fmt.Println("Installing certificate into /etc/npc/certs...")

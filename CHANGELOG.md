@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.20 - 2026-06-01
+
+- Improved the terminal UI styling with a stronger header, dashboard panels, action numbering, and clearer runtime/update sections.
+- Added a terminal UI flow for Cloudflare DNS-01 setup.
+- Added `npc acme cloudflare-setup` for writing Cloudflare DNS settings safely under `/etc/npc/secrets/cloudflare.env`.
+- Added DNS-01 certificate issuance for acme.sh using provider env files without logging secrets.
+
 ## 0.1.19 - 2026-05-21
 
 - Replaced the external Cobra dependency with a small local CLI layer tailored to npc commands.

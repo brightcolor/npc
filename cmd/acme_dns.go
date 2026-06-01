@@ -13,7 +13,7 @@ import (
 
 func acmeCommand() *cobra.Command {
 	root := &cobra.Command{Use: "acme", Short: "Manage acme.sh helper configuration"}
-	root.AddCommand(dnsSetupCommand())
+	root.AddCommand(dnsSetupCommand(), cloudflareSetupCommand())
 	return root
 }
 
@@ -69,4 +69,36 @@ func dnsProviderTemplate(provider string) (string, error) {
 	default:
 		return "", fmt.Errorf("unsupported DNS provider %q; supported: %s", provider, strings.Join(acme.DNSProviders, ", "))
 	}
+}
+
+func cloudflareSetupCommand() *cobra.Command {
+	var token, accountID, zoneID string
+	cmd := &cobra.Command{Use: "cloudflare-setup", Short: "Write Cloudflare DNS-01 credentials", RunE: func(cmd *cobra.Command, args []string) error {
+		if token == "" || accountID == "" {
+			return validationError{fmt.Errorf("--token and --account-id are required")}
+		}
+		if err := system.RequireRoot(); err != nil {
+			return permissionError{err}
+		}
+		content := cloudflareEnv(token, accountID, zoneID)
+		if err := secrets.WriteProviderEnv("cloudflare", []byte(content)); err != nil {
+			return err
+		}
+		fmt.Println("Saved Cloudflare DNS settings to", secrets.EnvPath("cloudflare"))
+		return nil
+	}}
+	cmd.Flags().StringVar(&token, "token", "", "Cloudflare API token with Zone DNS Edit permissions")
+	cmd.Flags().StringVar(&accountID, "account-id", "", "Cloudflare account ID")
+	cmd.Flags().StringVar(&zoneID, "zone-id", "", "optional Cloudflare zone ID")
+	return cmd
+}
+
+func cloudflareEnv(token, accountID, zoneID string) string {
+	var b strings.Builder
+	b.WriteString("CF_Token=" + token + "\n")
+	b.WriteString("CF_Account_ID=" + accountID + "\n")
+	if zoneID != "" {
+		b.WriteString("CF_Zone_ID=" + zoneID + "\n")
+	}
+	return b.String()
 }
