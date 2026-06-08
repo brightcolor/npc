@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.25 - 2026-06-08
+
+- Added site metadata for `alias`, `group`, `tags`, and `archived`.
+- Added filtered and sortable `npc list` output with compact and `--wide` modes.
+- Added `npc search <query>` across hostname, alias, group, tags, profile, backend, ACME method, and DNS provider.
+- Added `npc set <site> --alias --group --tags` for metadata management.
+- Added `npc archive` and `npc unarchive`; archived sites are hidden from normal lists.
+- Added scoped `npc status`, scoped `npc backup`, `npc check --all`, and conservative bulk `npc disable --group/--tag --yes`.
+- Added `npc certs renew --expiring [--days N]`.
+- Expanded `npc health --only-problems` and the TUI site selector with search and problem badges.
+- Bumped the config schema to version 2 and documented all new management arguments in the README.
+
 ## 0.1.24 - 2026-06-01
 
 - Removed the unwanted alternative CA from supported and documented ACME CA choices.

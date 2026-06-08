@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/brightcolor/npc/internal/certinfo"
 	"github.com/brightcolor/npc/internal/config"
 	"github.com/brightcolor/npc/internal/nginx"
 	"github.com/brightcolor/npc/internal/paths"
@@ -68,9 +69,9 @@ func migrateCommand() *cobra.Command {
 			return err
 		}
 		report := []string{}
-		if cfg.Version < 1 {
-			report = append(report, "set config version to 1")
-			cfg.Version = 1
+		if cfg.Version < 2 {
+			report = append(report, "set config version to 2")
+			cfg.Version = 2
 		}
 		for _, dir := range []string{paths.EtcDir, paths.SecretsDir, paths.CertsDir, paths.BackupsDir, paths.StateDir, paths.MaintenanceDir} {
 			if _, err := os.Stat(dir); os.IsNotExist(err) {
@@ -106,6 +107,7 @@ func migrateCommand() *cobra.Command {
 
 func monitorCommand() *cobra.Command {
 	var prometheus bool
+	var onlyProblems bool
 	cmd := &cobra.Command{Use: "monitor", Aliases: []string{"health"}, Short: "Print health and monitoring output", RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.Load("")
 		if err != nil {
@@ -128,6 +130,7 @@ func monitorCommand() *cobra.Command {
 			"sites_total":    len(cfg.Sites),
 			"sites_enabled":  enabled,
 			"sites_disabled": len(cfg.Sites) - enabled,
+			"site_problems":  siteProblems(cfg, onlyProblems),
 		}
 		if app.jsonOut {
 			return writeJSON(data)
@@ -140,13 +143,64 @@ func monitorCommand() *cobra.Command {
 			fmt.Printf("npc_sites_disabled %d\n", len(cfg.Sites)-enabled)
 			return nil
 		}
+		if onlyProblems {
+			return printSiteProblems(data["site_problems"].([]map[string]any))
+		}
 		for k, v := range data {
+			if k == "site_problems" {
+				continue
+			}
 			fmt.Printf("%-18s %v\n", strings.ReplaceAll(k, "_", " ")+":", v)
 		}
 		return nil
 	}}
 	cmd.Flags().BoolVar(&prometheus, "prometheus", false, "print Prometheus text format")
+	cmd.Flags().BoolVar(&onlyProblems, "only-problems", false, "show only sites with health problems")
 	return cmd
+}
+
+func siteProblems(cfg *config.Config, onlyProblems bool) []map[string]any {
+	var rows []map[string]any
+	for _, site := range cfg.SortedSites() {
+		var problems []string
+		if !siteEnabled(site) && !site.Archived {
+			problems = append(problems, "disabled")
+		}
+		if !fileExists(site.ConfigPath) {
+			problems = append(problems, "missing-config")
+		}
+		if site.SSL {
+			info := certinfo.Read(site.CertificatePath, site.ACME)
+			if !info.Exists {
+				problems = append(problems, "missing-cert")
+			} else if info.ParseError != "" {
+				problems = append(problems, "invalid-cert")
+			} else if info.DaysLeft <= 30 {
+				problems = append(problems, fmt.Sprintf("cert-expiring-%dd", info.DaysLeft))
+			}
+		}
+		if onlyProblems && len(problems) == 0 {
+			continue
+		}
+		rows = append(rows, map[string]any{"hostname": site.Hostname, "alias": site.Alias, "group": site.Group, "problems": problems})
+	}
+	return rows
+}
+
+func printSiteProblems(rows []map[string]any) error {
+	if len(rows) == 0 {
+		fmt.Println("No site problems found.")
+		return nil
+	}
+	for _, row := range rows {
+		fmt.Printf("%-34s %s\n", row["hostname"], strings.Join(anyStrings(row["problems"]), ", "))
+	}
+	return nil
+}
+
+func anyStrings(v any) []string {
+	items, _ := v.([]string)
+	return items
 }
 
 func boolInt(v bool) int {

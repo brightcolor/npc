@@ -28,6 +28,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 }
 
 func backupCommand() *cobra.Command {
+	var q siteQuery
 	root := &cobra.Command{Use: "backup", Short: "Back up npc-managed files", RunE: func(cmd *cobra.Command, args []string) error {
 		if err := system.RequireRoot(); err != nil {
 			return permissionError{err}
@@ -37,7 +38,7 @@ func backupCommand() *cobra.Command {
 			return err
 		}
 		files := []string{paths.ConfigFile}
-		for _, site := range cfg.Sites {
+		for _, site := range q.apply(cfg.SortedSites()) {
 			files = append(files, site.ConfigPath, site.EnabledPath)
 		}
 		set, err := backup.Create(files...)
@@ -50,6 +51,7 @@ func backupCommand() *cobra.Command {
 		fmt.Println("Backup created:", set.Dir)
 		return nil
 	}}
+	bindSiteQueryFlags(root, &q)
 	root.AddCommand(&cobra.Command{Use: "list", Short: "List backups", RunE: func(cmd *cobra.Command, args []string) error {
 		backups, err := backup.List()
 		if err != nil {

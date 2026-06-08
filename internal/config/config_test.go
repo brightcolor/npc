@@ -11,7 +11,8 @@ func TestConfigReadWrite(t *testing.T) {
 	cfg := New()
 	cfg.Sites["app.example.com"] = &Site{
 		Hostname: "app.example.com", BackendScheme: "http", BackendHost: "127.0.0.1",
-		BackendPort: 3000, ACMECA: "letsencrypt", CreatedAt: time.Now().UTC(), UpdatedAt: time.Now().UTC(), ManagedBy: "npc",
+		BackendPort: 3000, Alias: "app", Group: "prod", Tags: []string{"docker", "prod"},
+		ACMECA: "letsencrypt", CreatedAt: time.Now().UTC(), UpdatedAt: time.Now().UTC(), ManagedBy: "npc",
 	}
 	if err := Save(path, cfg); err != nil {
 		t.Fatal(err)
@@ -25,5 +26,11 @@ func TestConfigReadWrite(t *testing.T) {
 	}
 	if loaded.Sites["app.example.com"].ACMECA != "letsencrypt" {
 		t.Fatalf("unexpected ACME CA: %s", loaded.Sites["app.example.com"].ACMECA)
+	}
+	if loaded.Sites["app.example.com"].Alias != "app" || len(loaded.Sites["app.example.com"].Tags) != 2 {
+		t.Fatalf("metadata was not preserved: %#v", loaded.Sites["app.example.com"])
+	}
+	if site, ok := loaded.FindSite("app"); !ok || site.Hostname != "app.example.com" {
+		t.Fatalf("alias lookup failed")
 	}
 }

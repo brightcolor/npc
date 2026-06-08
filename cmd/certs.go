@@ -14,9 +14,29 @@ import (
 
 func certsCommand() *cobra.Command {
 	root := &cobra.Command{Use: "certs", Short: "List and renew certificates", RunE: listCerts}
-	root.AddCommand(&cobra.Command{Use: "renew <hostname>", Short: "Renew one managed ACME certificate", Args: cobra.ExactArgs(1), RunE: renewCert})
+	root.AddCommand(renewCertCommand())
 	root.AddCommand(&cobra.Command{Use: "renew-all", Short: "Run acme.sh renewal for all certificates", RunE: renewAllCerts})
 	return root
+}
+
+func renewCertCommand() *cobra.Command {
+	var expiring bool
+	var days int
+	cmd := &cobra.Command{Use: "renew [hostname]", Short: "Renew one certificate or expiring managed certificates", RunE: func(cmd *cobra.Command, args []string) error {
+		if expiring {
+			if len(args) != 0 {
+				return validationError{fmt.Errorf("--expiring does not accept a hostname")}
+			}
+			return renewExpiringCerts(days)
+		}
+		if len(args) != 1 {
+			return validationError{fmt.Errorf("expected hostname or --expiring")}
+		}
+		return renewCert(cmd, args)
+	}}
+	cmd.Flags().BoolVar(&expiring, "expiring", false, "renew managed ACME certificates expiring soon")
+	cmd.Flags().IntVar(&days, "days", 30, "expiry threshold for --expiring")
+	return cmd
 }
 
 func listCerts(cmd *cobra.Command, args []string) error {
@@ -57,15 +77,7 @@ func renewCert(cmd *cobra.Command, args []string) error {
 	if !site.ACME {
 		return validationError{fmt.Errorf("%s is not configured for acme.sh", site.Hostname)}
 	}
-	if !acme.Installed() {
-		return validationError{fmt.Errorf("acme.sh was not found")}
-	}
-	res, err := system.Run(acme.CommandPath(), "--renew", "-d", site.Hostname)
-	fmt.Println(res.Output)
-	if err != nil {
-		return fmt.Errorf("acme.sh renew failed: %w%s", err, acme.DiagnoseOutput(res.Output))
-	}
-	return err
+	return renewOneSite(site)
 }
 
 func renewAllCerts(cmd *cobra.Command, args []string) error {
@@ -78,4 +90,38 @@ func renewAllCerts(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("acme.sh renew-all failed: %w%s", err, acme.DiagnoseOutput(res.Output))
 	}
 	return err
+}
+
+func renewExpiringCerts(days int) error {
+	cfg, err := config.Load("")
+	if err != nil {
+		return err
+	}
+	renewed := 0
+	for _, site := range cfg.SortedSites() {
+		if !site.ACME {
+			continue
+		}
+		info := certinfo.Read(site.CertificatePath, site.ACME)
+		if !info.Exists || info.DaysLeft <= days {
+			if err := renewOneSite(site); err != nil {
+				return err
+			}
+			renewed++
+		}
+	}
+	fmt.Printf("Renewed %d expiring certificate(s)\n", renewed)
+	return nil
+}
+
+func renewOneSite(site *config.Site) error {
+	if !acme.Installed() {
+		return validationError{fmt.Errorf("acme.sh was not found")}
+	}
+	res, err := system.Run(acme.CommandPath(), "--renew", "-d", site.Hostname)
+	fmt.Println(res.Output)
+	if err != nil {
+		return fmt.Errorf("acme.sh renew failed for %s: %w%s", site.Hostname, err, acme.DiagnoseOutput(res.Output))
+	}
+	return nil
 }

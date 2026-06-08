@@ -126,6 +126,159 @@ npc create \
   --dry-run
 ```
 
+## Managing Many Sites
+
+Large vHost inventories should be grouped and filtered instead of managed from one long table. npc stores optional metadata per site:
+
+- `alias`: short unique name for commands, for example `shop-api`.
+- `group`: one owner or environment bucket, for example `customer-a` or `prod`.
+- `tags`: comma-separated labels, for example `docker,api,production`.
+- `archived`: hides old sites from normal lists without deleting configs or metadata.
+
+Set metadata when creating a site:
+
+```bash
+sudo npc create \
+  --hostname api.example.com \
+  --backend-host 127.0.0.1 \
+  --backend-port 3000 \
+  --alias shop-api \
+  --group customer-a \
+  --tags docker,api,production \
+  --non-interactive
+```
+
+Set or replace metadata later:
+
+```bash
+sudo npc set api.example.com --alias shop-api
+sudo npc set shop-api --group customer-a
+sudo npc set shop-api --tags docker,api,production
+```
+
+After an alias is set, commands that load one site accept either the hostname or alias:
+
+```bash
+npc show shop-api
+sudo npc edit shop-api
+sudo npc disable shop-api
+```
+
+### List Filters
+
+`npc list` hides archived sites by default and prints a compact table:
+
+```bash
+npc list
+npc list --wide
+```
+
+Supported filters:
+
+```bash
+npc list --enabled              # only enabled sites
+npc list --disabled             # only disabled sites
+npc list --ssl                  # only HTTPS sites
+npc list --no-ssl               # only HTTP-only sites
+npc list --profile docker       # exact profile match
+npc list --domain example.com   # hostname suffix match
+npc list --backend 127.0.0.1    # backend URL contains this text
+npc list --group customer-a     # exact group match
+npc list --tag production       # site has this tag
+npc list --archived             # only archived sites
+npc list --all                  # include archived sites
+```
+
+Filters can be combined. A site must match all selected filters.
+
+Sorting:
+
+```bash
+npc list --sort hostname
+npc list --sort backend
+npc list --sort profile
+npc list --sort updated
+npc list --sort enabled
+npc list --sort cert-expiry
+```
+
+### Search
+
+`npc search <query>` searches hostname, alias, group, tags, profile, backend URL, ACME method, and DNS provider. Search includes archived sites.
+
+```bash
+npc search api
+npc search customer-a
+npc search 3000
+```
+
+### Status by Scope
+
+`npc status` supports the same filters as `npc list`, so you can get scoped counters:
+
+```bash
+npc status --group customer-a
+npc status --tag production
+npc status --profile docker --json
+```
+
+### Health and Problem Views
+
+`npc health` is an alias for `npc monitor`. It prints runtime counters. `--only-problems` prints only sites with issues:
+
+```bash
+npc health
+npc health --only-problems
+npc health --json
+```
+
+Problem labels currently include disabled active sites, missing configs, missing or invalid certificates, and certificates with 30 days or less remaining.
+
+For per-site checks:
+
+```bash
+npc check shop-api
+npc check --all
+npc check --all --json
+```
+
+### Bulk Actions
+
+Bulk actions are intentionally conservative. Destructive or broad changes require a scope and confirmation flag.
+
+Back up all matching sites:
+
+```bash
+sudo npc backup --group customer-a
+sudo npc backup --tag production
+sudo npc backup --profile docker
+```
+
+Disable a group or tag:
+
+```bash
+sudo npc disable --group staging --yes
+sudo npc disable --tag temporary --yes
+```
+
+`npc disable` without a hostname refuses bulk mode unless `--group` or `--tag` and `--yes` are provided.
+
+Renew expiring managed ACME certificates:
+
+```bash
+sudo npc certs renew --expiring
+sudo npc certs renew --expiring --days 14
+```
+
+Archive old sites instead of deleting them:
+
+```bash
+sudo npc archive old-api
+npc list --archived
+npc list --all
+sudo npc unarchive old-api
+```
+
 ## How It Works
 
 `npc` keeps the moving parts deliberately simple:

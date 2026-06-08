@@ -34,6 +34,9 @@ func promptCreate(o *createOptions) error {
 	o.backendPort = port
 	o.backendScheme = ask("Backend scheme (http/https)", defaultString(o.backendScheme, "http"))
 	o.profile = ask("Profile (generic/websocket/upload/streaming/docker/security-basic)", defaultString(o.profile, "generic"))
+	o.alias = ask("Alias, optional", o.alias)
+	o.group = ask("Group, optional", o.group)
+	o.tags = ask("Tags, comma-separated optional", o.tags)
 	o.websocket = yes(ask("WebSocket support? (y/n)", boolDefault(o.websocket)))
 	o.ssl = yes(ask("Enable SSL/TLS? (y/n)", boolDefault(o.ssl)))
 	if o.ssl {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/brightcolor/npc/internal/backup"
@@ -21,16 +22,41 @@ func (ui terminalUI) selectManagedSite(title string) (*config.Config, *config.Si
 	if err != nil {
 		return nil, nil, err
 	}
-	sites := cfg.SortedSites()
+	query := ui.askDefault("Search/filter sites, optional", "")
+	sites := siteQuery{search: query}.apply(cfg.SortedSites())
 	if len(sites) == 0 {
-		fmt.Println(emptyState("No managed sites yet", "Create or import a site before editing or deleting."))
+		fmt.Println(emptyState("No matching managed sites", "Clear the search or create/import a site first."))
 		return cfg, nil, nil
 	}
 	labels := make([]string, 0, len(sites))
 	for _, site := range sites {
-		labels = append(labels, fmt.Sprintf("%-34s %s", site.Hostname, dim(site.BackendURL())))
+		state := fail("off")
+		if siteEnabled(site) {
+			state = ok("on")
+		}
+		problems := siteProblemLabels(site)
+		if problems == "" {
+			problems = dim("ok")
+		} else {
+			problems = warn(problems)
+		}
+		labels = append(labels, fmt.Sprintf("%-30s %-10s %-18s %s", site.Hostname, state, problems, dim(site.BackendURL())))
 	}
 	return cfg, sites[ui.menu(title, labels)], nil
+}
+
+func siteProblemLabels(site *config.Site) string {
+	var labels []string
+	if !siteEnabled(site) {
+		labels = append(labels, "disabled")
+	}
+	if site.SSL && certDays(site) <= 30 {
+		labels = append(labels, "cert")
+	}
+	if site.Archived {
+		labels = append(labels, "archived")
+	}
+	return strings.Join(labels, ",")
 }
 
 func (ui terminalUI) editManagedSite() error {
@@ -66,6 +92,9 @@ func (ui terminalUI) editManagedSite() error {
 	site.BackendPort = backendPort
 	site.BackendScheme = backendScheme
 	site.Profile = ui.askDefault("Profile", defaultString(site.Profile, "generic"))
+	site.Alias = ui.askDefault("Alias, optional", site.Alias)
+	site.Group = ui.askDefault("Group, optional", site.Group)
+	site.Tags = splitTags(ui.askDefault("Tags, comma-separated optional", strings.Join(site.Tags, ",")))
 	site.ClientMaxBodySize = ui.askDefault("client_max_body_size", defaultString(site.ClientMaxBodySize, "100M"))
 	site.WebSocket = ui.confirm("Enable WebSocket headers?", site.WebSocket)
 	site.SecurityHeaders = ui.askDefault("Security headers profile, empty/standard", site.SecurityHeaders)

@@ -79,12 +79,12 @@ func isQuickCreateArgs(args []string) bool {
 
 func isKnownCommand(name string) bool {
 	known := map[string]bool{
-		"acme": true, "backup": true, "certs": true, "check": true, "completion": true, "create": true,
+		"acme": true, "archive": true, "backup": true, "certs": true, "check": true, "completion": true, "create": true,
 		"delete": true, "disable": true, "docker": true, "doctor": true, "edit": true,
 		"enable": true, "export": true, "health": true, "help": true, "import": true, "install-nginx": true,
 		"list": true, "logs": true, "maintenance": true, "migrate": true, "monitor": true,
-		"reload": true, "restart": true, "restore": true, "show": true, "status": true,
-		"test": true, "tui": true, "uninstall": true, "upgrade": true, "repair": true,
+		"reload": true, "restart": true, "restore": true, "search": true, "set": true, "show": true, "status": true,
+		"test": true, "tui": true, "unarchive": true, "uninstall": true, "upgrade": true, "repair": true,
 		"inspect": true, "diff": true, "rollback": true, "firewall": true,
 	}
 	return known[name]
@@ -127,11 +127,12 @@ func newRootCommand() *cobra.Command {
 	cmd.Flags().Bool("install", false, "install current binary to /usr/local/bin/npc")
 	cmd.Flags().Bool("upgrade", false, "upgrade npc from GitHub Releases")
 	cmd.Flags().Bool("version", false, "show version")
-	cmd.AddCommand(createCommand(), listCommand(), statusCommand(), showCommand(), editCommand(), repairCommand(), inspectCommand())
+	cmd.AddCommand(createCommand(), listCommand(), searchCommand(), setSiteCommand(), statusCommand(), showCommand(), editCommand(), repairCommand(), inspectCommand())
 	cmd.AddCommand(enableCommand(), disableCommand(), deleteCommand(), testCommand(), reloadCommand(), restartCommand())
 	cmd.AddCommand(installNginxCommand(), backupCommand(), restoreCommand(), certsCommand(), doctorCommand(), logsCommand())
 	cmd.AddCommand(upgradeCommand(), uninstallCommand(), maintenanceCommand(), checkCommand(), exportCommand(), importCommand(), dockerCommand(), tuiCommand())
 	cmd.AddCommand(diffCommand(), rollbackCommand(), firewallCommand(), migrateCommand(), monitorCommand(), acmeCommand())
+	cmd.AddCommand(archiveCommand(), unarchiveCommand())
 	return cmd
 }
 

@@ -21,6 +21,7 @@ import (
 
 type createOptions struct {
 	hostname, backendHost, backendScheme, profile           string
+	alias, group, tags                                      string
 	clientMaxBodySize, certPath, keyPath                    string
 	acmeMethod, acmeCA, dnsProvider, email, securityHeaders string
 	backendPort                                             int
@@ -43,6 +44,9 @@ func bindCreateFlags(cmd *cobra.Command, o *createOptions) {
 	cmd.Flags().IntVar(&o.backendPort, "backend-port", 0, "backend port")
 	cmd.Flags().StringVar(&o.backendScheme, "backend-scheme", "http", "backend scheme: http or https")
 	cmd.Flags().StringVar(&o.profile, "profile", "generic", "proxy profile")
+	cmd.Flags().StringVar(&o.alias, "alias", "", "short site alias")
+	cmd.Flags().StringVar(&o.group, "group", "", "site group")
+	cmd.Flags().StringVar(&o.tags, "tags", "", "comma-separated site tags")
 	cmd.Flags().BoolVar(&o.ssl, "ssl", false, "enable HTTPS")
 	cmd.Flags().BoolVar(&o.acme, "acme", false, "use acme.sh")
 	cmd.Flags().StringVar(&o.acmeMethod, "acme-method", "", "acme method: dns, http, standalone, tls-alpn")
@@ -213,13 +217,18 @@ func buildSite(o createOptions) (*config.Site, error) {
 			return nil, err
 		}
 	}
+	acmeCA := ""
+	if o.acme {
+		acmeCA = o.acmeCA
+	}
 	configPath, enabledPath := nginx.SitePaths(o.hostname)
 	now := time.Now().UTC()
 	site := &config.Site{
-		Hostname: o.hostname, BackendScheme: o.backendScheme, BackendHost: o.backendHost,
+		Hostname: o.hostname, Alias: o.alias, Group: o.group, Tags: splitTags(o.tags),
+		BackendScheme: o.backendScheme, BackendHost: o.backendHost,
 		BackendPort: o.backendPort, Profile: o.profile, WebSocket: o.websocket, HTTP2: o.http2,
 		ClientMaxBodySize: o.clientMaxBodySize, SSL: o.ssl, ACME: o.acme, ACMEMethod: normalizeACME(o.acmeMethod),
-		ACMECA: o.acmeCA, DNSProvider: o.dnsProvider, ACMEEmail: o.email, RedirectHTTPS: o.redirectHTTPS, SecurityHeaders: o.securityHeaders,
+		ACMECA: acmeCA, DNSProvider: o.dnsProvider, ACMEEmail: o.email, RedirectHTTPS: o.redirectHTTPS, SecurityHeaders: o.securityHeaders,
 		ConfigPath: configPath, EnabledPath: enabledPath, CertificatePath: o.certPath, CertificateKeyPath: o.keyPath,
 		CreatedAt: now, UpdatedAt: now, ManagedBy: "npc",
 	}
