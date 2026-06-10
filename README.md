@@ -55,7 +55,7 @@ The UI includes a Cloudflare DNS-01 setup flow. It stores the Cloudflare API tok
 
 When a valid Cloudflare secret file already exists, npc treats Cloudflare DNS-01 as the preferred ACME default. The UI offers to use the saved Cloudflare credentials, `npc create` defaults to `--acme-method dns --dns-provider cloudflare`, and the ACME account email prompt becomes optional.
 
-Let’s Encrypt is the default ACME CA. `npc` also sets acme.sh's default CA to Let’s Encrypt after installing acme.sh and before ACME issuance. Use `--acme-ca buypass` only when a site should use Buypass instead.
+Let's Encrypt is the default ACME CA. `npc` also sets acme.sh's default CA to Let's Encrypt after installing acme.sh and before ACME issuance. Use `--acme-ca buypass` only when a site should use Buypass instead.
 
 On startup, the UI checks GitHub Releases for a newer npc version. If an update is available, it shows the current version, the latest version, and the release changelog before opening the main menu. The menu then includes an **Upgrade npc** entry.
 
@@ -532,7 +532,7 @@ There are two certificate modes:
 - Existing certificate: pass `--cert-path` and `--key-path`.
 - acme.sh: pass `--ssl --acme` and select `--acme-method http`, `dns`, `standalone`, or `tls-alpn`.
 
-Let’s Encrypt is the default CA for all ACME issue commands:
+Let's Encrypt is the default CA for all ACME issue commands:
 
 ```bash
 sudo npc create --hostname app.example.com --backend-host 127.0.0.1 --backend-port 3000 --ssl --acme
