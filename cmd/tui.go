@@ -8,7 +8,6 @@ import (
 	"github.com/brightcolor/npc/internal/nginx"
 	"github.com/brightcolor/npc/internal/system"
 	"github.com/brightcolor/npc/internal/updater"
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 )
 
@@ -18,47 +17,80 @@ func tuiCommand() *cobra.Command {
 
 func runTUI(cmd *cobra.Command, args []string) error {
 	ui := newTerminalUI()
+	ui.header()
 	if err := ui.ensureStartupDependencies(); err != nil {
 		return err
 	}
-	if !app.noUpgrade {
-		app.update, _ = updater.Check(app.build.RepoOwner, app.build.RepoName, app.build.Version)
+	ui.showUpdateOnOpen()
+	for {
+		ui.header()
+		ui.dashboard()
+		options := tuiOptions()
+		upgradeIndex := -1
+		if app.update != nil && app.update.UpdateAvailable {
+			upgradeIndex = len(options)
+			options = append(options, menuOption{Title: "Upgrade npc", Desc: fmt.Sprintf("Install %s over current %s", app.update.LatestVersion, app.update.CurrentVersion)})
+		}
+		options = append(options, menuOption{Title: "Quit", Desc: "Leave the terminal UI"})
+		choice := ui.actionMenu("Choose an action", options)
+		if choice == upgradeIndex {
+			if err := runUpgradeVersion(""); err != nil {
+				return err
+			}
+			ui.pause()
+			continue
+		}
+		if err := runTUIChoice(ui, cmd, args, choice); err != nil {
+			return err
+		}
 	}
-	model, err := newBubbleModel()
-	if err != nil {
-		return err
-	}
-	final, err := tea.NewProgram(model, tea.WithAltScreen()).Run()
-	if err != nil {
-		return err
-	}
-	if m, ok := final.(bubbleModel); ok {
-		return runBubbleAction(ui, cmd, args, m.action)
-	}
-	return nil
 }
 
-func runBubbleAction(ui terminalUI, cmd *cobra.Command, args []string, action string) error {
-	switch action {
-	case "create":
+func tuiOptions() []menuOption {
+	return []menuOption{
+		{Title: "Expose a Docker container", Desc: "Scan running containers and publish one through Nginx"},
+		{Title: "Create a custom reverse proxy", Desc: "Enter hostname, backend, TLS, logs, and proxy options manually"},
+		{Title: "Configure Cloudflare DNS-01", Desc: "Save Cloudflare API settings for automatic ACME DNS validation"},
+		{Title: "List managed sites", Desc: "Show sites tracked in /etc/npc/config.yaml"},
+		{Title: "Edit a managed site", Desc: "Change backend, metadata, profile, WebSocket, body size, and logging"},
+		{Title: "Delete a managed site", Desc: "Disable a site and optionally remove config, metadata, and certificates"},
+		{Title: "Show system status", Desc: "Print Nginx, paths, and managed-site counters"},
+	}
+}
+
+func runTUIChoice(ui terminalUI, cmd *cobra.Command, args []string, choice int) error {
+	switch choice {
+	case 0:
+		return ui.exposeDocker()
+	case 1:
 		o := createOptions{}
 		if err := promptCreate(&o); err != nil {
 			return err
 		}
 		return ui.previewAndRun(o)
-	case "docker":
-		return ui.exposeDocker()
-	case "cloudflare":
-		return ui.configureCloudflare()
-	case "list":
-		return listCommand().RunE(cmd, args)
-	case "status":
+	case 2:
+		if err := ui.configureCloudflare(); err != nil {
+			return err
+		}
+	case 3:
+		if err := listCommand().RunE(cmd, args); err != nil {
+			return err
+		}
+	case 4:
+		if err := ui.editManagedSite(); err != nil {
+			return err
+		}
+	case 5:
+		if err := ui.deleteManagedSite(); err != nil {
+			return err
+		}
+	case 6:
 		return statusCommand().RunE(cmd, args)
-	case "upgrade":
-		return runUpgradeVersion("")
 	default:
 		return nil
 	}
+	ui.pause()
+	return nil
 }
 
 func (ui terminalUI) ensureStartupDependencies() error {
@@ -118,13 +150,28 @@ func (ui terminalUI) offerACMEInstall() error {
 	return nil
 }
 
-func compactChangelog() string {
-	if app.update == nil || strings.TrimSpace(app.update.Changelog) == "" {
-		return ""
+func (ui terminalUI) showUpdateOnOpen() {
+	if app.noUpgrade {
+		return
 	}
-	text := strings.TrimSpace(app.update.Changelog)
-	if len(text) > 700 {
-		return text[:700] + "..."
+	info, err := updater.Check(app.build.RepoOwner, app.build.RepoName, app.build.Version)
+	if err != nil {
+		if app.verbose {
+			fmt.Println(warn("Update check failed: ") + err.Error())
+			ui.pause()
+		}
+		return
 	}
-	return text
+	app.update = info
+	if !info.UpdateAvailable {
+		return
+	}
+	ui.header()
+	fmt.Println(panel("Update Available", "Current: "+info.CurrentVersion, "Latest:  "+info.LatestVersion, "Release: "+info.URL))
+	if strings.TrimSpace(info.Changelog) != "" {
+		fmt.Println(section("Changelog"))
+		fmt.Println(strings.TrimSpace(info.Changelog))
+	}
+	fmt.Println(dim("Use the Upgrade npc menu entry to install this release, or start with --no-upgrade to skip checks."))
+	ui.pause()
 }
