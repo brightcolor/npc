@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.27 - 2026-06-10
+
+- Simplified the Bubble Tea TUI into a calmer operations table.
+- Removed the split-pane/detail-box layout that made the interface feel noisy.
+- Switched the TUI output to ASCII-safe labels and compact rows to avoid terminal encoding artifacts.
+- Kept search, Sites/Problems/All views, action palette, update hints, and keyboard shortcuts.
+
 ## 0.1.26 - 2026-06-10
 
 - Rebuilt `npc tui` as a Bubble Tea full-screen terminal UI.
