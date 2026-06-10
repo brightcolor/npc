@@ -138,6 +138,7 @@ func (m *bubbleModel) move(delta int) {
 func (m bubbleModel) visibleSites() []*config.Site {
 	q := siteQuery{search: m.filter}
 	if m.tab == 1 {
+		q.search = ""
 		return problemSites(m.sites)
 	}
 	if m.tab == 2 {
@@ -166,7 +167,7 @@ func (m bubbleModel) summary() string {
 			problems++
 		}
 	}
-	return fmt.Sprintf("nginx:%s docker:%s sites:%d/%d issues:%d",
+	return fmt.Sprintf("Nginx %s  Docker %s  Sites %d/%d active  Issues %d",
 		yesBadge(system.Exists("nginx") && nginx.ServiceActive()), yesBadge(docker.Installed()), active, len(m.sites), problems)
 }
 
@@ -185,5 +186,5 @@ func truncateCell(value string, width int) string {
 	if width <= 1 {
 		return value[:width]
 	}
-	return value[:width-1] + "."
+	return value[:width-1] + "…"
 }

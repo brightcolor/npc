@@ -45,7 +45,7 @@ Start the terminal UI:
 npc
 ```
 
-The UI is built with Bubble Tea, but intentionally stays close to an operations table instead of a decorative dashboard. It opens as a calm full-screen site inventory with a compact header, a searchable table, Sites/Problems/All views, issue hints, and a simple action palette. It is meant for large vHost inventories where a plain numbered menu becomes slow.
+The UI is built with Bubble Tea. It opens as a full-screen terminal workspace with tabs, a searchable site table, a detail pane, health/problem hints, and an action palette. It is meant for large vHost inventories where a plain numbered menu becomes slow.
 
 Key bindings:
 
@@ -64,14 +64,7 @@ q or esc         quit
 
 The action palette can hand off to the existing safe workflows for create, Docker exposure, Cloudflare setup, list output, status output, and upgrade. Write paths still use the same backups, previews, `nginx -t`, and reload guards as the CLI.
 
-For editing or deleting a selected site, use the CLI commands from the table context:
-
-```bash
-sudo npc edit <hostname-or-alias>
-sudo npc delete <hostname-or-alias>
-```
-
-Editing lets you change backend settings, alias, group, tags, profile, body size, WebSocket headers, security header profile, and per-site logs before reviewing the rendered Nginx config. Deleting always disables the site first, offers a backup, and then lets you choose whether to remove the Nginx config, npc metadata, and certificate files.
+Managed sites can also be edited and deleted from the UI. Editing lets you change backend settings, alias, group, tags, profile, body size, WebSocket headers, security header profile, and per-site logs before reviewing the rendered Nginx config. Deleting always disables the site first, offers a backup, and then lets you choose whether to remove the Nginx config, npc metadata, and certificate files.
 
 The UI includes a Cloudflare DNS-01 setup flow. It stores the Cloudflare API token, account ID, and optional zone ID under `/etc/npc/secrets/cloudflare.env` with mode `0600`. Secrets are not compiled into npc and are not printed back in the UI.
 
