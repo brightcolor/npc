@@ -45,17 +45,32 @@ Start the terminal UI:
 npc
 ```
 
-The UI can scan running Docker containers, list their available ports, and create a reverse proxy for the selected container. Published Docker ports are exposed through `127.0.0.1:<host-port>`. Container-only ports are offered with a warning because host Nginx must be able to reach the container name through networking.
+The UI is built with Bubble Tea. It opens as a full-screen terminal workspace with tabs, a searchable site table, a detail pane, health/problem hints, and an action palette. It is meant for large vHost inventories where a plain numbered menu becomes slow.
 
-The UI shows a dashboard with Nginx, Docker, and managed-site status before each action. It uses status badges, action cards, and a review screen before writing anything. If no sites exist yet, `npc list` and the UI show an empty-state message instead of returning a blank table.
+Key bindings:
 
-Managed sites can also be edited and deleted from the UI. Editing lets you change the backend host, port, scheme, profile, body size, WebSocket headers, security header profile, and per-site logs before reviewing the rendered Nginx config. Deleting always disables the site first, offers a backup, and then lets you choose whether to remove the Nginx config, npc metadata, and certificate files.
+```text
+up/down or k/j   move through sites
+tab              switch Sites, Problems, and All tabs
+/                search hostname, alias, group, tags, backend, and profile
+enter            open the action palette
+c                create a reverse proxy
+d                expose a Docker container
+f                configure Cloudflare DNS-01
+r                reload metadata from disk
+u                upgrade when an update is available
+q or esc         quit
+```
+
+The action palette can hand off to the existing safe workflows for create, Docker exposure, Cloudflare setup, list output, status output, and upgrade. Write paths still use the same backups, previews, `nginx -t`, and reload guards as the CLI.
+
+Managed sites can also be edited and deleted from the UI. Editing lets you change backend settings, alias, group, tags, profile, body size, WebSocket headers, security header profile, and per-site logs before reviewing the rendered Nginx config. Deleting always disables the site first, offers a backup, and then lets you choose whether to remove the Nginx config, npc metadata, and certificate files.
 
 The UI includes a Cloudflare DNS-01 setup flow. It stores the Cloudflare API token, account ID, and optional zone ID under `/etc/npc/secrets/cloudflare.env` with mode `0600`. Secrets are not compiled into npc and are not printed back in the UI.
 
 When a valid Cloudflare secret file already exists, npc treats Cloudflare DNS-01 as the preferred ACME default. The UI offers to use the saved Cloudflare credentials, `npc create` defaults to `--acme-method dns --dns-provider cloudflare`, and the ACME account email prompt becomes optional.
 
-Let’s Encrypt is the default ACME CA. `npc` also sets acme.sh's default CA to Let’s Encrypt after installing acme.sh and before ACME issuance. Use `--acme-ca buypass` only when a site should use Buypass instead.
+Let's Encrypt is the default ACME CA. `npc` also sets acme.sh's default CA to Let's Encrypt after installing acme.sh and before ACME issuance. Use `--acme-ca buypass` only when a site should use Buypass instead.
 
 On startup, the UI checks GitHub Releases for a newer npc version. If an update is available, it shows the current version, the latest version, and the release changelog before opening the main menu. The menu then includes an **Upgrade npc** entry.
 
@@ -532,7 +547,7 @@ There are two certificate modes:
 - Existing certificate: pass `--cert-path` and `--key-path`.
 - acme.sh: pass `--ssl --acme` and select `--acme-method http`, `dns`, `standalone`, or `tls-alpn`.
 
-Let’s Encrypt is the default CA for all ACME issue commands:
+Let's Encrypt is the default CA for all ACME issue commands:
 
 ```bash
 sudo npc create --hostname app.example.com --backend-host 127.0.0.1 --backend-port 3000 --ssl --acme
