@@ -17,7 +17,7 @@ func listCommand() *cobra.Command {
 	var q siteQuery
 	var wide bool
 	cmd := &cobra.Command{Use: "list", Short: "List npc-managed sites", RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load("")
+		cfg, err := loadManagedConfig()
 		if err != nil {
 			return err
 		}
@@ -84,7 +84,7 @@ func bindSiteQueryFlags(cmd *cobra.Command, q *siteQuery) {
 
 func searchCommand() *cobra.Command {
 	return &cobra.Command{Use: "search <query>", Args: cobra.ExactArgs(1), Short: "Search managed sites", RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load("")
+		cfg, err := loadManagedConfig()
 		if err != nil {
 			return err
 		}
@@ -108,7 +108,7 @@ func searchCommand() *cobra.Command {
 func statusCommand() *cobra.Command {
 	var q siteQuery
 	cmd := &cobra.Command{Use: "status", Short: "Show global status", RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load("")
+		cfg, err := loadManagedConfig()
 		if err != nil {
 			return err
 		}

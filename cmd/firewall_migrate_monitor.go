@@ -64,7 +64,7 @@ func firewallSuggestions() map[string]any {
 func migrateCommand() *cobra.Command {
 	var dryRun bool
 	cmd := &cobra.Command{Use: "migrate", Short: "Migrate npc config schema safely", RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load("")
+		cfg, err := loadManagedConfig()
 		if err != nil {
 			return err
 		}

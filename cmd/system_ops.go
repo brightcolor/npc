@@ -33,7 +33,7 @@ func backupCommand() *cobra.Command {
 		if err := system.RequireRoot(); err != nil {
 			return permissionError{err}
 		}
-		cfg, err := config.Load("")
+		cfg, err := loadManagedConfig()
 		if err != nil {
 			return err
 		}

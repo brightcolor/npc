@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/brightcolor/npc/internal/config"
 	"github.com/brightcolor/npc/internal/docker"
 	"github.com/brightcolor/npc/internal/nginx"
 	"github.com/brightcolor/npc/internal/system"
@@ -38,7 +37,7 @@ func (ui terminalUI) header() {
 }
 
 func (ui terminalUI) dashboard() {
-	cfg, _ := config.Load("")
+	cfg, _ := loadManagedConfig()
 	active, problems := 0, 0
 	for _, site := range cfg.Sites {
 		if _, err := os.Lstat(site.EnabledPath); err == nil {

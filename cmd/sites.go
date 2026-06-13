@@ -13,7 +13,7 @@ import (
 
 func showCommand() *cobra.Command {
 	return &cobra.Command{Use: "show <hostname>", Args: cobra.ExactArgs(1), Short: "Show site details", RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load("")
+		cfg, err := loadManagedConfig()
 		if err != nil {
 			return err
 		}
@@ -86,7 +86,7 @@ func disableBulk(q siteQuery, yes bool) error {
 	if !yes || (q.tag == "" && q.group == "") {
 		return validationError{fmt.Errorf("bulk disable requires --tag or --group plus --yes")}
 	}
-	cfg, err := config.Load("")
+	cfg, err := loadManagedConfig()
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,7 @@ func deleteCommand() *cobra.Command {
 		if err := system.RequireRoot(); err != nil {
 			return permissionError{err}
 		}
-		cfg, err := config.Load("")
+		cfg, err := loadManagedConfig()
 		if err != nil {
 			return err
 		}
@@ -134,7 +134,7 @@ func deleteCommand() *cobra.Command {
 }
 
 func loadSite(hostname string) (*config.Site, error) {
-	cfg, err := config.Load("")
+	cfg, err := loadManagedConfig()
 	if err != nil {
 		return nil, err
 	}

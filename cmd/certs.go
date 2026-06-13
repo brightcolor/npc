@@ -40,7 +40,7 @@ func renewCertCommand() *cobra.Command {
 }
 
 func listCerts(cmd *cobra.Command, args []string) error {
-	cfg, err := config.Load("")
+	cfg, err := loadManagedConfig()
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func renewAllCerts(cmd *cobra.Command, args []string) error {
 }
 
 func renewExpiringCerts(days int) error {
-	cfg, err := config.Load("")
+	cfg, err := loadManagedConfig()
 	if err != nil {
 		return err
 	}

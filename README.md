@@ -126,6 +126,20 @@ npc create \
   --dry-run
 ```
 
+## Managed Nginx Config Discovery
+
+npc stores site metadata in `/etc/npc/config.yaml`, but it also scans `/etc/nginx/sites-available/*.conf` on commands that load managed sites. Any config with this header is treated as npc-managed even when the YAML entry is missing:
+
+```nginx
+# Managed by npc
+# Do not edit manually unless you know what you are doing.
+# Hostname: app.example.com
+```
+
+Discovered header configs are available in `npc list`, `npc show`, `npc edit`, `npc delete`, `npc certs`, `npc check`, `npc maintenance`, backup, health output, and the terminal UI. Discovery is read-only for list and inspection commands. npc only writes metadata after an explicit write action such as `edit`, `set`, `archive`, `repair`, or `rollback`.
+
+`npc create` will not silently overwrite an existing npc-managed config discovered from `sites-available`. Use `npc edit <hostname>` for normal changes or `--force` only when replacing the generated config is intentional.
+
 ## Managing Many Sites
 
 Large vHost inventories should be grouped and filtered instead of managed from one long table. npc stores optional metadata per site:

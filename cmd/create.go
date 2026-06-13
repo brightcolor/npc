@@ -104,14 +104,17 @@ func executeCreate(o createOptions) error {
 	if err := nginx.EnsureServiceRunning(); err != nil {
 		return err
 	}
-	cfg, err := config.Load("")
+	cfg, err := loadManagedConfig()
 	if err != nil {
 		return err
 	}
 	if _, exists := cfg.Sites[site.Hostname]; exists && !o.force {
 		return validationError{fmt.Errorf("site %s already exists; use edit or --force", site.Hostname)}
 	}
-	if fileExists(site.ConfigPath) && !nginx.Managed(site.ConfigPath) && !o.force {
+	if fileExists(site.ConfigPath) && !o.force {
+		if nginx.Managed(site.ConfigPath) {
+			return validationError{fmt.Errorf("%s exists and is managed by npc; use edit or --force", site.ConfigPath)}
+		}
 		return validationError{fmt.Errorf("%s exists and is not managed by npc; import it or choose another hostname", site.ConfigPath)}
 	}
 	if !o.noBackup {

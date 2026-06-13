@@ -18,7 +18,7 @@ import (
 )
 
 func (ui terminalUI) selectManagedSite(title string) (*config.Config, *config.Site, error) {
-	cfg, err := config.Load("")
+	cfg, err := loadManagedConfig()
 	if err != nil {
 		return nil, nil, err
 	}

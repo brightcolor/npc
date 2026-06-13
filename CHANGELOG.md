@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.29 - 2026-06-13
+
+- Scan `/etc/nginx/sites-available/*.conf` for configs with the npc managed header.
+- Treat discovered header configs as managed sites for `list`, `show`, `edit`, `delete`, `certs`, `check`, `maintenance`, backup, health output, and the terminal UI.
+- Keep discovery read-only during listing and inspection; metadata is only persisted after an explicit write action.
+- Prevent `create` from silently overwriting an existing npc-managed config unless `--force` is used.
+
 ## 0.1.28 - 2026-06-10
 
 - Reverted the Bubble Tea TUI and restored the previous dependency-light terminal UI.

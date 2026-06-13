@@ -21,11 +21,11 @@ func editCommand() *cobra.Command {
 		if err := system.RequireRoot(); err != nil {
 			return permissionError{err}
 		}
-		cfg, err := config.Load("")
+		cfg, err := loadManagedConfig()
 		if err != nil {
 			return err
 		}
-		site, ok := cfg.Sites[args[0]]
+		site, ok := cfg.FindSite(args[0])
 		if !ok {
 			return validationError{fmt.Errorf("site %s is not managed by npc", args[0])}
 		}
