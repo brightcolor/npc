@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.30 - 2026-06-14
+
+- Added keyboard navigation to the dependency-light terminal UI.
+- Menus now support Up/Down, Enter, and direct number selection in an Ubuntu-installer-style flow.
+- Kept the previous numeric prompt fallback for terminals where raw keyboard input is unavailable.
+- Kept Bubble Tea and heavy TUI dependencies out of the build.
+
 ## 0.1.29 - 2026-06-13
 
 - Scan `/etc/nginx/sites-available/*.conf` for configs with the npc managed header.

@@ -67,6 +67,9 @@ func (ui terminalUI) dashboard() {
 }
 
 func (ui terminalUI) actionMenu(title string, options []menuOption) int {
+	if choice, ok := ui.keyboardActionMenu(title, options); ok {
+		return choice
+	}
 	for {
 		fmt.Println(section(title))
 		for i, option := range options {
@@ -87,6 +90,13 @@ func (ui terminalUI) actionMenu(title string, options []menuOption) int {
 }
 
 func (ui terminalUI) menu(title string, options []string) int {
+	menuOptions := make([]menuOption, 0, len(options))
+	for _, option := range options {
+		menuOptions = append(menuOptions, menuOption{Title: option})
+	}
+	if choice, ok := ui.keyboardMenu(title, menuOptions, true); ok {
+		return choice
+	}
 	for {
 		fmt.Println(section(title))
 		for i, option := range options {
@@ -101,6 +111,71 @@ func (ui terminalUI) menu(title string, options []string) int {
 		}
 		fmt.Println(warn("Invalid selection."))
 	}
+}
+
+func (ui terminalUI) keyboardActionMenu(title string, options []menuOption) (int, bool) {
+	return ui.keyboardMenu(title, options, false)
+}
+
+func (ui terminalUI) keyboardMenu(title string, options []menuOption, compact bool) (int, bool) {
+	if len(options) == 0 || !enableRawInput() {
+		return 0, false
+	}
+	defer restoreInput()
+	selected := 0
+	lines := 0
+	for {
+		if lines > 0 {
+			fmt.Printf("\033[%dA\033[J", lines)
+		}
+		lines = renderKeyboardMenu(title, options, selected, compact)
+		key, number := readUIKey()
+		switch {
+		case key == keyCancel:
+			fmt.Println()
+			return 0, false
+		case number > 0 && number <= len(options):
+			fmt.Println()
+			return number - 1, true
+		case key == keyEnter:
+			fmt.Println()
+			return selected, true
+		case key == keyUp:
+			selected = (selected - 1 + len(options)) % len(options)
+		case key == keyDown:
+			selected = (selected + 1) % len(options)
+		}
+	}
+}
+
+func renderKeyboardMenu(title string, options []menuOption, selected int, compact bool) int {
+	lines := 0
+	fmt.Println(section(title))
+	lines += 2
+	for i, option := range options {
+		cursor := " "
+		number := fmt.Sprintf("%02d", i+1)
+		titleText := option.Title
+		if i == selected {
+			cursor = ">"
+			titleText = selectedText(titleText)
+		}
+		fmt.Printf("  %s %s %s\n", accent(cursor), accent("["+number+"]"), titleText)
+		lines++
+		if !compact && option.Desc != "" {
+			desc := option.Desc
+			if i == selected {
+				desc = cyan(desc)
+			} else {
+				desc = dim(desc)
+			}
+			fmt.Printf("        %s\n", desc)
+			lines++
+		}
+	}
+	fmt.Println()
+	fmt.Println(dim("Use Up/Down and Enter. Press a number to jump, q or Esc for number mode."))
+	return lines + 2
 }
 
 func (ui terminalUI) askRequired(label string) string {

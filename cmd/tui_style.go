@@ -50,6 +50,9 @@ func cyan(s string) string   { return "\033[36m" + s + "\033[0m" }
 func dim(s string) string    { return "\033[2m" + s + "\033[0m" }
 func warn(s string) string   { return "\033[33m" + s + "\033[0m" }
 func accent(s string) string { return "\033[35m" + s + "\033[0m" }
+func selectedText(s string) string {
+	return "\033[97;44m " + s + " \033[0m"
+}
 
 func pill(s string) string {
 	return fmt.Sprintf("%s%s%s", accent("["), ok(s), accent("]"))

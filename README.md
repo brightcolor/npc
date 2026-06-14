@@ -47,7 +47,7 @@ npc
 
 The UI can scan running Docker containers, list their available ports, and create a reverse proxy for the selected container. Published Docker ports are exposed through `127.0.0.1:<host-port>`. Container-only ports are offered with a warning because host Nginx must be able to reach the container name through networking.
 
-The UI shows a dashboard with Nginx, Docker, and managed-site status before each action. It uses status badges, action cards, and a review screen before writing anything. If no sites exist yet, `npc list` and the UI show an empty-state message instead of returning a blank table.
+The UI shows a dashboard with Nginx, Docker, and managed-site status before each action. It uses status badges, action cards, and a review screen before writing anything. Menus are keyboard-driven in a simple Ubuntu-installer-style flow: use Up/Down to move, Enter to select, or press a number directly. If raw keyboard input is not available, npc falls back to the older numeric prompt. If no sites exist yet, `npc list` and the UI show an empty-state message instead of returning a blank table.
 
 Managed sites can also be edited and deleted from the UI. Editing lets you change the backend host, port, scheme, profile, body size, WebSocket headers, security header profile, and per-site logs before reviewing the rendered Nginx config. Deleting always disables the site first, offers a backup, and then lets you choose whether to remove the Nginx config, npc metadata, and certificate files.
 
