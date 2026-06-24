@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.34 - 2026-06-24
+
+- Refresh certificate metadata from existing npc-managed Nginx config files during site discovery.
+- Added `npc certs issue <hostname>` for issuing certificates for existing managed/imported sites.
+- `certs issue` supports HTTP-01 and DNS-01, including Cloudflare through saved acme.sh provider env files.
+- Added a Web UI certificate issue form and automatic prefill for edit/certificate forms when selecting a site.
+
 ## 0.1.33 - 2026-06-24
 
 - Replaced the web UI command console with normal AdminLTE form workflows.

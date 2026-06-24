@@ -30,7 +30,7 @@ func TestRenderWebUIUnit(t *testing.T) {
 }
 
 func TestWebUITemplateUsesFormsInsteadOfCommandConsole(t *testing.T) {
-	for _, want := range []string{`name="action" value="create"`, `name="action" value="edit"`, `name="action" value="cert-set"`, `name="action" value="import"`} {
+	for _, want := range []string{`name="action" value="create"`, `name="action" value="edit"`, `name="action" value="cert-set"`, `name="action" value="cert-issue"`, `name="action" value="import"`, `data-host=`, `fillForm(form)`} {
 		if !strings.Contains(webUIHTML, want) {
 			t.Fatalf("template missing %q", want)
 		}

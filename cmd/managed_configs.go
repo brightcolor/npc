@@ -26,11 +26,33 @@ func mergeManagedNginxConfigFiles(cfg *config.Config, files []string) error {
 		if !candidate.Managed || candidate.Site == nil || candidate.Error != "" {
 			continue
 		}
-		if _, exists := cfg.Sites[candidate.Site.Hostname]; exists {
+		if existing, exists := cfg.Sites[candidate.Site.Hostname]; exists {
+			mergeParsedCertificateMetadata(existing, candidate.Site)
 			continue
 		}
 		candidate.Site.Profile = "discovered"
 		cfg.Sites[candidate.Site.Hostname] = candidate.Site
 	}
 	return nil
+}
+
+func mergeParsedCertificateMetadata(existing, parsed *config.Site) {
+	if parsed.CertificatePath != "" {
+		existing.CertificatePath = parsed.CertificatePath
+	}
+	if parsed.CertificateKeyPath != "" {
+		existing.CertificateKeyPath = parsed.CertificateKeyPath
+	}
+	if parsed.SSL {
+		existing.SSL = true
+	}
+	if parsed.ACME {
+		existing.ACME = true
+	}
+	if parsed.HTTP2 {
+		existing.HTTP2 = true
+	}
+	if parsed.RedirectHTTPS {
+		existing.RedirectHTTPS = true
+	}
 }

@@ -81,6 +81,8 @@ The web UI uses AdminLTE, starts in dark mode, and includes a browser toggle for
 
 State-changing web UI actions use explicit confirmation controls. The intent is that every important CLI capability also has a normal web UI workflow, not a command prompt in the browser. New CLI features should be added to the Web UI as forms or table actions as they are added.
 
+When a site is selected in the edit or certificate forms, the Web UI pre-fills the known backend, profile, body size, WebSocket, redirect, HTTP/2, certificate path, key path, ACME, and DNS provider values from npc metadata.
+
 Run it permanently with systemd:
 
 ```bash
@@ -178,6 +180,25 @@ sudo npc certs set app.example.com \
   --acme-method dns \
   --dns-provider cloudflare
 ```
+
+Issue a new certificate for an existing managed or imported site with HTTP-01:
+
+```bash
+sudo npc certs issue app.example.com --method http --redirect-https --http2
+```
+
+Issue with DNS-01 through Cloudflare. This uses `/etc/npc/secrets/cloudflare.env`, created by `npc acme cloudflare-setup` or the Web UI Cloudflare setup flow:
+
+```bash
+sudo npc certs issue app.example.com \
+  --method dns \
+  --dns-provider cloudflare \
+  --email admin@example.com \
+  --redirect-https \
+  --http2
+```
+
+The Web UI exposes the same certificate issuing flow in the Certificates card. Choose the site, select HTTP-01 or DNS-01, set `cloudflare` as DNS provider for Cloudflare, confirm the action, and submit.
 
 Remove certificate metadata from a site but keep the acme.sh registration:
 

@@ -61,6 +61,8 @@ func runWebUIAction(r *http.Request) webuiNotice {
 		err = webUIDelete(r)
 	case "cert-set":
 		err = webUICertSet(r)
+	case "cert-issue":
+		err = webUICertIssue(r)
 	case "cert-delete":
 		err = webUICertDelete(r)
 	case "import":

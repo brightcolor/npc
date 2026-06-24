@@ -21,6 +21,7 @@ import (
 func certsCommand() *cobra.Command {
 	root := &cobra.Command{Use: "certs", Short: "List and renew certificates", RunE: listCerts}
 	root.AddCommand(renewCertCommand())
+	root.AddCommand(issueCertCommand())
 	root.AddCommand(setCertCommand(), deleteCertCommand())
 	root.AddCommand(&cobra.Command{Use: "renew-all", Short: "Run acme.sh renewal for all certificates", RunE: renewAllCerts})
 	return root

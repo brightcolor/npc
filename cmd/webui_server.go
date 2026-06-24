@@ -9,14 +9,26 @@ import (
 )
 
 type webuiSite struct {
-	Hostname string
-	Backend  string
-	State    string
-	SSL      string
-	Profile  string
-	Group    string
-	Tags     string
-	Config   string
+	Hostname           string
+	Backend            string
+	BackendHost        string
+	BackendPort        int
+	BackendScheme      string
+	State              string
+	SSL                string
+	Profile            string
+	Group              string
+	Tags               string
+	Config             string
+	ClientMaxBodySize  string
+	WebSocket          bool
+	RedirectHTTPS      bool
+	HTTP2              bool
+	CertificatePath    string
+	CertificateKeyPath string
+	ACME               bool
+	ACMEMethod         string
+	DNSProvider        string
 }
 
 type webuiPage struct {
@@ -80,14 +92,26 @@ func loadWebUIPage() (webuiPage, error) {
 
 func webUISiteRow(site *config.Site) webuiSite {
 	return webuiSite{
-		Hostname: site.Hostname,
-		Backend:  site.BackendURL(),
-		State:    onOff(siteEnabled(site)),
-		SSL:      yesNoPlain(site.SSL),
-		Profile:  defaultString(site.Profile, "-"),
-		Group:    defaultString(site.Group, "-"),
-		Tags:     defaultString(joinTags(site.Tags), "-"),
-		Config:   site.ConfigPath,
+		Hostname:           site.Hostname,
+		Backend:            site.BackendURL(),
+		BackendHost:        site.BackendHost,
+		BackendPort:        site.BackendPort,
+		BackendScheme:      site.BackendScheme,
+		State:              onOff(siteEnabled(site)),
+		SSL:                yesNoPlain(site.SSL),
+		Profile:            defaultString(site.Profile, "-"),
+		Group:              defaultString(site.Group, "-"),
+		Tags:               defaultString(joinTags(site.Tags), "-"),
+		Config:             site.ConfigPath,
+		ClientMaxBodySize:  site.ClientMaxBodySize,
+		WebSocket:          site.WebSocket,
+		RedirectHTTPS:      site.RedirectHTTPS,
+		HTTP2:              site.HTTP2,
+		CertificatePath:    site.CertificatePath,
+		CertificateKeyPath: site.CertificateKeyPath,
+		ACME:               site.ACME,
+		ACMEMethod:         site.ACMEMethod,
+		DNSProvider:        site.DNSProvider,
 	}
 }
 

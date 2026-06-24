@@ -73,6 +73,18 @@ func webUICertDelete(r *http.Request) error {
 	return rewriteSiteAfterCertChange(cfg, site, false, !formBool(r, "no_reload"))
 }
 
+func webUICertIssue(r *http.Request) error {
+	return issueCertificateForSite(r.FormValue("hostname"), certIssueOptions{
+		method:        r.FormValue("method"),
+		provider:      r.FormValue("dns_provider"),
+		email:         r.FormValue("email"),
+		ca:            r.FormValue("acme_ca"),
+		redirectHTTPS: formBool(r, "redirect_https"),
+		http2:         formBool(r, "http2"),
+		noReload:      formBool(r, "no_reload"),
+	})
+}
+
 func webUIImport(r *http.Request) error {
 	if err := system.RequireRoot(); err != nil {
 		return permissionError{err}

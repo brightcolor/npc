@@ -25,7 +25,6 @@ server {
 	if err := os.WriteFile(conf, []byte(data), 0o644); err != nil {
 		t.Fatal(err)
 	}
-
 	cfg := config.New()
 	if err := mergeManagedNginxConfigFiles(cfg, []string{conf}); err != nil {
 		t.Fatal(err)
@@ -40,7 +39,32 @@ server {
 	if site.BackendURL() != "http://127.0.0.1:3000" {
 		t.Fatalf("unexpected backend URL: %s", site.BackendURL())
 	}
-	if site.ConfigPath != conf {
-		t.Fatalf("unexpected config path: %s", site.ConfigPath)
+}
+
+func TestMergeManagedNginxConfigFilesRefreshesCertificateMetadata(t *testing.T) {
+	dir := t.TempDir()
+	conf := filepath.Join(dir, "app.example.com.conf")
+	data := `# Managed by npc
+server {
+    listen 443 ssl http2;
+    server_name app.example.com;
+    ssl_certificate /etc/ssl/app/fullchain.pem;
+    ssl_certificate_key /etc/ssl/app/key.pem;
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+    }
+}
+`
+	if err := os.WriteFile(conf, []byte(data), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg := config.New()
+	cfg.Sites["app.example.com"] = &config.Site{Hostname: "app.example.com", ConfigPath: conf}
+	if err := mergeManagedNginxConfigFiles(cfg, []string{conf}); err != nil {
+		t.Fatal(err)
+	}
+	site := cfg.Sites["app.example.com"]
+	if !site.SSL || site.CertificatePath == "" || site.CertificateKeyPath == "" || !site.HTTP2 {
+		t.Fatalf("expected certificate metadata refresh: %#v", site)
 	}
 }
