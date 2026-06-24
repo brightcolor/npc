@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.35 - 2026-06-24
+
+- Reworked the Web UI around task-based workflows instead of dense command-like forms.
+- Added inline profile guidance explaining when to use `generic`, `websocket`, `upload`, `streaming`, `docker`, and `security-basic`.
+- Split certificate management into separate ACME issue, existing certificate, and removal tabs with guidance for HTTP-01, DNS-01, and Cloudflare.
+- Added persistent field help for hostname, backend, body size, ACME method, DNS provider, and destructive certificate actions.
+
 ## 0.1.34 - 2026-06-24
 
 - Refresh certificate metadata from existing npc-managed Nginx config files during site discovery.

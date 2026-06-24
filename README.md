@@ -77,11 +77,20 @@ Bind it to another interface or all interfaces:
 npc webui --listen 0.0.0.0:8088
 ```
 
-The web UI uses AdminLTE, starts in dark mode, and includes a browser toggle for light/dark mode. It shows Nginx status, managed sites, runtime paths, JSON API links, and normal form-based workflows. You can create sites, edit backend settings, enable or disable vHosts, delete metadata, import existing configs, and manage certificate paths without typing CLI commands.
+The web UI uses AdminLTE, starts in dark mode, and includes a browser toggle for light/dark mode. It shows Nginx status, managed sites, runtime paths, JSON API links, and normal form-based workflows. You can create sites, edit backend settings, enable or disable vHosts, delete metadata, import existing configs, issue certificates, attach existing certificates, and remove certificate metadata without typing CLI commands.
 
 State-changing web UI actions use explicit confirmation controls. The intent is that every important CLI capability also has a normal web UI workflow, not a command prompt in the browser. New CLI features should be added to the Web UI as forms or table actions as they are added.
 
 When a site is selected in the edit or certificate forms, the Web UI pre-fills the known backend, profile, body size, WebSocket, redirect, HTTP/2, certificate path, key path, ACME, and DNS provider values from npc metadata.
+
+The Web UI is organized around administrator tasks:
+
+- **Create a reverse proxy** asks for route, behavior, and HTTPS settings in clear sections.
+- **Edit site** pre-fills existing data and explains the currently selected profile.
+- **Certificates** is split into **Issue ACME**, **Attach existing**, and **Remove** tabs so issuing, attaching, and deleting certificate metadata are not mixed together.
+- **Profile guide** explains which profile fits normal web apps, realtime apps, uploads, streams, Docker backends, or internal tools.
+
+The certificate area deliberately explains the choice between ACME methods. Use **HTTP-01** when the domain already resolves to this server and public port 80 is reachable. Use **DNS-01** when Cloudflare credentials are configured, when the origin is private, when firewall rules block HTTP validation, or when wildcard-style DNS validation is required. Existing certificates are for paths that already exist on disk and should only be attached after checking that Nginx can read both the fullchain and private key.
 
 Run it permanently with systemd:
 
@@ -505,7 +514,11 @@ Use profiles as safe starting points. If a profile is close but not perfect, kee
 
 Use `generic` when the app behaves like a standard web service. This is the right default for most admin panels, dashboards, and simple HTTP apps.
 
+The practical difference between `generic` and `streaming` is buffering and patience. `generic` lets Nginx buffer backend responses and uses shorter timeouts, which is efficient for normal HTML, JSON, and dashboards. `streaming` disables buffering and keeps reads open for much longer, which prevents server-sent events, long polling, and media streams from being held back or cut off too early.
+
 Use `websocket`, `node`, or `grafana` when the browser keeps live connections open. These profiles keep proxy reads open longer and disable buffering so realtime updates are not delayed.
+
+The difference between `websocket` and `streaming` is the protocol behavior. `websocket` is for upgraded HTTP connections that need `Upgrade` and `Connection` headers. `streaming` is for plain HTTP responses that stay open and continuously send data.
 
 Use `upload`, `wordpress`, or `nextcloud` when users upload files, import media, or send large forms. These profiles raise the request body size and use longer timeouts so Nginx does not interrupt slow uploads too aggressively.
 
