@@ -40,7 +40,7 @@ func runWebUI(o webuiOptions) error {
 	}
 	server := &http.Server{Addr: o.listen, Handler: webUIHandler()}
 	fmt.Println("npc web UI listening on http://" + o.listen)
-	fmt.Println("The first web UI release is read-only. Use the CLI for write actions.")
+	fmt.Println("Put this web UI behind your reverse proxy authentication before exposing it.")
 	return server.ListenAndServe()
 }
 

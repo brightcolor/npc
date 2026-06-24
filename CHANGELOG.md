@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.33 - 2026-06-24
+
+- Replaced the web UI command console with normal AdminLTE form workflows.
+- Added web forms for creating, editing, enabling, disabling, deleting, importing sites, and managing certificates.
+- Added direct site table action buttons for enable, disable, and delete.
+- Kept write confirmations on destructive or state-changing web UI actions.
+
 ## 0.1.32 - 2026-06-24
 
 - Expanded `npc import` for manually created or third-party Nginx reverse proxy configs.

@@ -77,9 +77,9 @@ Bind it to another interface or all interfaces:
 npc webui --listen 0.0.0.0:8088
 ```
 
-The web UI uses AdminLTE, starts in dark mode, and includes a browser toggle for light/dark mode. It shows Nginx status, managed sites, runtime paths, JSON API links, and an operations console. The operations console can run npc commands through the npc binary without using a shell. Write actions require an explicit confirmation checkbox.
+The web UI uses AdminLTE, starts in dark mode, and includes a browser toggle for light/dark mode. It shows Nginx status, managed sites, runtime paths, JSON API links, and normal form-based workflows. You can create sites, edit backend settings, enable or disable vHosts, delete metadata, import existing configs, and manage certificate paths without typing CLI commands.
 
-Every CLI capability should also be reachable from the web UI through the operations console. The console accepts the same arguments you would type after `npc`, for example `list --wide`, `import --yes`, `certs set app.example.com ...`, or `reload`. Commands are executed with argument lists, not through a shell. When a command can change Nginx, certificates, backups, services, or metadata, the confirmation checkbox must be enabled.
+State-changing web UI actions use explicit confirmation controls. The intent is that every important CLI capability also has a normal web UI workflow, not a command prompt in the browser. New CLI features should be added to the Web UI as forms or table actions as they are added.
 
 Run it permanently with systemd:
 
@@ -105,7 +105,7 @@ sudo npc create \
   --non-interactive
 ```
 
-If your reverse proxy handles authentication, the web UI can be bound to `0.0.0.0`, but binding to `127.0.0.1` and exposing it through an authenticated HTTPS reverse proxy is still the safer default.
+If your reverse proxy handles authentication, the web UI can be bound to `0.0.0.0`, but binding to `127.0.0.1` and exposing it through an authenticated HTTPS reverse proxy is still the safer default. The web UI itself is designed to be placed behind that authentication layer.
 
 Preview the generated systemd unit:
 
