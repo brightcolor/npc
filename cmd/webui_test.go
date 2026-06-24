@@ -41,3 +41,19 @@ func TestRenderWebUIUnit(t *testing.T) {
 		}
 	}
 }
+
+func TestWebUIAllowsCertAndImportCommands(t *testing.T) {
+	allowed := [][]string{
+		{"import", "--yes"},
+		{"certs", "set", "app.example.com", "--manual"},
+		{"certs", "delete", "app.example.com", "--force"},
+	}
+	for _, args := range allowed {
+		if !allowedWebUICommand(args) {
+			t.Fatalf("expected allowed command: %#v", args)
+		}
+	}
+	if !webUIWriteCommand([]string{"certs", "delete", "app.example.com", "--force"}) {
+		t.Fatal("certs delete should require write confirmation")
+	}
+}

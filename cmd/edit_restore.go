@@ -51,6 +51,27 @@ func editCommand() *cobra.Command {
 		if o.clientMaxBodySize != "" {
 			site.ClientMaxBodySize = o.clientMaxBodySize
 		}
+		if o.ssl {
+			site.SSL = true
+		}
+		if o.certPath != "" {
+			site.CertificatePath = o.certPath
+			site.SSL = true
+		}
+		if o.keyPath != "" {
+			site.CertificateKeyPath = o.keyPath
+			site.SSL = true
+		}
+		if o.redirectHTTPS {
+			site.RedirectHTTPS = true
+		}
+		if o.http2 {
+			site.HTTP2 = true
+		}
+		if o.acme {
+			site.ACME = true
+			site.ACMEMethod = normalizeACME(o.acmeMethod)
+		}
 		site.UpdatedAt = time.Now().UTC()
 		content, err := renderer.RenderSite(site)
 		if err != nil {
@@ -88,6 +109,13 @@ func editCommand() *cobra.Command {
 	cmd.Flags().StringVar(&o.backendScheme, "backend-scheme", "", "new backend scheme")
 	cmd.Flags().BoolVar(&o.websocket, "websocket", false, "enable WebSocket")
 	cmd.Flags().StringVar(&o.clientMaxBodySize, "client-max-body-size", "", "new client_max_body_size")
+	cmd.Flags().BoolVar(&o.ssl, "ssl", false, "enable SSL")
+	cmd.Flags().StringVar(&o.certPath, "cert-path", "", "new fullchain path")
+	cmd.Flags().StringVar(&o.keyPath, "key-path", "", "new private key path")
+	cmd.Flags().BoolVar(&o.redirectHTTPS, "redirect-https", false, "enable HTTP to HTTPS redirect")
+	cmd.Flags().BoolVar(&o.http2, "http2", false, "enable HTTP/2 on HTTPS listener")
+	cmd.Flags().BoolVar(&o.acme, "acme", false, "mark site certificate as acme.sh managed")
+	cmd.Flags().StringVar(&o.acmeMethod, "acme-method", "", "acme method metadata")
 	cmd.Flags().BoolVar(&o.dryRun, "dry-run", false, "show planned config")
 	cmd.Flags().BoolVar(&o.noReload, "no-reload", false, "skip reload")
 	cmd.Flags().BoolVar(&o.noBackup, "no-backup", false, "skip backup")

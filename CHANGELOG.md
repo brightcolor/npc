@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.32 - 2026-06-24
+
+- Expanded `npc import` for manually created or third-party Nginx reverse proxy configs.
+- Import now detects SSL certificate paths, HTTP/2, HTTPS redirects, WebSocket headers, access/error logs, body size, backend URL, and enabled symlink path.
+- Added `npc import --path <file> --yes` and `npc import --yes --force` for targeted or metadata-refresh imports.
+- Added `npc certs set <hostname>` to attach or update existing certificate/key paths and ACME metadata.
+- Added `npc certs delete <hostname>` to remove certificate metadata, optionally remove acme.sh registration, and optionally delete certificate files.
+- Added the new import and certificate operations to the AdminLTE web UI command catalog.
+
 ## 0.1.31 - 2026-06-24
 
 - Added `npc webui` for an AdminLTE-based web interface.

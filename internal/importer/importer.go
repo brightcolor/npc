@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -11,11 +12,20 @@ import (
 
 	"github.com/brightcolor/npc/internal/config"
 	"github.com/brightcolor/npc/internal/nginx"
+	"github.com/brightcolor/npc/internal/paths"
 )
 
 var (
-	serverNamePattern = regexp.MustCompile(`(?m)^\s*server_name\s+([^;]+);`)
-	proxyPassPattern  = regexp.MustCompile(`(?m)^\s*proxy_pass\s+([^;]+);`)
+	serverNamePattern      = regexp.MustCompile(`(?m)^\s*server_name\s+([^;]+);`)
+	proxyPassPattern       = regexp.MustCompile(`(?m)^\s*proxy_pass\s+([^;]+);`)
+	sslCertPattern         = regexp.MustCompile(`(?m)^\s*ssl_certificate\s+([^;]+);`)
+	sslKeyPattern          = regexp.MustCompile(`(?m)^\s*ssl_certificate_key\s+([^;]+);`)
+	accessLogPattern       = regexp.MustCompile(`(?m)^\s*access_log\s+([^;\s]+)`)
+	errorLogPattern        = regexp.MustCompile(`(?m)^\s*error_log\s+([^;\s]+)`)
+	clientMaxBodyPattern   = regexp.MustCompile(`(?m)^\s*client_max_body_size\s+([^;]+);`)
+	redirectHTTPSPattern   = regexp.MustCompile(`(?m)return\s+30[128]\s+https://`)
+	webSocketHeaderPattern = regexp.MustCompile(`(?m)proxy_set_header\s+Upgrade\s+\$http_upgrade`)
+	http2ListenPattern     = regexp.MustCompile(`(?m)listen\s+443\s+ssl\s+http2`)
 )
 
 type Candidate struct {
@@ -55,12 +65,29 @@ func ParseFile(path string) Candidate {
 			port = parsed
 		}
 	}
-	_, enabledPath := nginx.SitePaths(hostname)
+	enabledPath := filepath.Join(paths.NginxSitesEnabled, filepath.Base(path))
 	now := time.Now().UTC()
 	candidate.Site = &config.Site{
 		Hostname: hostname, BackendScheme: u.Scheme, BackendHost: u.Hostname(), BackendPort: port,
-		Profile: "imported", ClientMaxBodySize: "100M", ConfigPath: path, EnabledPath: enabledPath,
+		Profile: "imported", ClientMaxBodySize: firstMatch(clientMaxBodyPattern, text, "100M"),
+		ConfigPath: path, EnabledPath: enabledPath, WebSocket: webSocketHeaderPattern.MatchString(text),
+		RedirectHTTPS: redirectHTTPSPattern.MatchString(text), HTTP2: http2ListenPattern.MatchString(text),
+		AccessLog: firstMatch(accessLogPattern, text, ""), ErrorLog: firstMatch(errorLogPattern, text, ""),
 		CreatedAt: now, UpdatedAt: now, ManagedBy: "npc",
 	}
+	candidate.Site.CertificatePath = firstMatch(sslCertPattern, text, "")
+	candidate.Site.CertificateKeyPath = firstMatch(sslKeyPattern, text, "")
+	candidate.Site.SSL = candidate.Site.CertificatePath != "" && candidate.Site.CertificateKeyPath != ""
+	if strings.Contains(candidate.Site.CertificatePath, ".acme.sh") || strings.Contains(candidate.Site.CertificateKeyPath, ".acme.sh") {
+		candidate.Site.ACME = true
+	}
 	return candidate
+}
+
+func firstMatch(pattern *regexp.Regexp, text, fallback string) string {
+	match := pattern.FindStringSubmatch(text)
+	if len(match) < 2 {
+		return fallback
+	}
+	return strings.Trim(strings.TrimSpace(match[1]), `"'`)
 }

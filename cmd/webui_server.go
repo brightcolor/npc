@@ -257,7 +257,11 @@ func webUICommandCatalog() []webuiCommandExample {
 		{"Maintenance on", "maintenance enable app.example.com", true}, {"Maintenance off", "maintenance disable app.example.com", true},
 		{"Repair", "repair app.example.com", true}, {"Diff", "diff app.example.com", false},
 		{"Rollback", "rollback app.example.com", true}, {"Firewall", "firewall suggest", false},
-		{"Migrate", "migrate", true}, {"Monitor", "monitor", false}, {"Import", "import", false},
+		{"Migrate", "migrate", true}, {"Monitor", "monitor", false}, {"Import scan", "import", false},
+		{"Import configs", "import --yes", true}, {"Import one path", "import --path /etc/nginx/sites-available/app.conf --yes", true},
+		{"Set cert", "certs set app.example.com --cert-path /path/fullchain.pem --key-path /path/privkey.pem --manual", true},
+		{"Delete cert metadata", "certs delete app.example.com --force --keep-acme", true},
+		{"Delete acme cert", "certs delete app.example.com --force --files", true},
 		{"Export", "export", false}, {"Upgrade", "upgrade", true}, {"Web UI unit", "webui unit --listen 127.0.0.1:8088", false},
 	}
 }

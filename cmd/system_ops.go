@@ -148,8 +148,13 @@ func exportCommand() *cobra.Command {
 
 func importCommand() *cobra.Command {
 	var yes bool
+	var force bool
+	var onePath string
 	cmd := &cobra.Command{Use: "import", Short: "Inspect existing Nginx sites for import", RunE: func(cmd *cobra.Command, args []string) error {
 		files, _ := filepath.Glob(filepath.Join(paths.NginxSitesAvailable, "*.conf"))
+		if onePath != "" {
+			files = []string{onePath}
+		}
 		cfg, err := config.Load("")
 		if err != nil {
 			return err
@@ -166,8 +171,8 @@ func importCommand() *cobra.Command {
 				continue
 			}
 			fmt.Printf("%s\t%s\t%s -> %s\n", file, status, candidate.Site.Hostname, candidate.Site.BackendURL())
-			if yes && !candidate.Managed {
-				if _, exists := cfg.Sites[candidate.Site.Hostname]; exists {
+			if yes {
+				if _, exists := cfg.Sites[candidate.Site.Hostname]; exists && !force {
 					continue
 				}
 				cfg.Sites[candidate.Site.Hostname] = candidate.Site
@@ -185,6 +190,8 @@ func importCommand() *cobra.Command {
 		return nil
 	}}
 	cmd.Flags().BoolVar(&yes, "yes", false, "import detected manual sites into npc metadata")
+	cmd.Flags().BoolVar(&force, "force", false, "replace existing npc metadata with parsed config metadata")
+	cmd.Flags().StringVar(&onePath, "path", "", "import one explicit Nginx config path instead of scanning sites-available")
 	return cmd
 }
 

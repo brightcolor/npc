@@ -79,6 +79,8 @@ npc webui --listen 0.0.0.0:8088
 
 The web UI uses AdminLTE, starts in dark mode, and includes a browser toggle for light/dark mode. It shows Nginx status, managed sites, runtime paths, JSON API links, and an operations console. The operations console can run npc commands through the npc binary without using a shell. Write actions require an explicit confirmation checkbox.
 
+Every CLI capability should also be reachable from the web UI through the operations console. The console accepts the same arguments you would type after `npc`, for example `list --wide`, `import --yes`, `certs set app.example.com ...`, or `reload`. Commands are executed with argument lists, not through a shell. When a command can change Nginx, certificates, backups, services, or metadata, the confirmation checkbox must be enabled.
+
 Run it permanently with systemd:
 
 ```bash
@@ -118,6 +120,78 @@ sudo npc webui uninstall-service
 ```
 
 AdminLTE assets are loaded from jsDelivr CDN. The npc binary still contains the actual web UI template and all server logic.
+
+## Working With Existing Nginx Configs
+
+npc can adopt reverse proxy configs that were created manually or by other tools. It scans `/etc/nginx/sites-available/*.conf`:
+
+```bash
+npc import
+```
+
+After reviewing the candidates, import them into `/etc/npc/config.yaml`:
+
+```bash
+sudo npc import --yes
+```
+
+Import one explicit file:
+
+```bash
+sudo npc import --path /etc/nginx/sites-available/app.conf --yes
+```
+
+Refresh existing npc metadata from the parsed Nginx config:
+
+```bash
+sudo npc import --path /etc/nginx/sites-available/app.conf --yes --force
+```
+
+The importer detects the public hostname, backend URL, SSL certificate paths, HTTP/2 listener, HTTPS redirects, WebSocket headers, access/error logs, `client_max_body_size`, and enabled symlink path. Once imported, the site can be managed with normal commands:
+
+```bash
+npc show app.example.com
+sudo npc edit app.example.com --backend-port 8081
+sudo npc repair app.example.com
+```
+
+Editing or repairing an imported config rewrites it using npc's managed Nginx template. Take a backup first if the original file contains custom directives that npc does not model yet.
+
+## Existing Certificates
+
+Attach an existing certificate to a site:
+
+```bash
+sudo npc certs set app.example.com \
+  --cert-path /etc/letsencrypt/live/app.example.com/fullchain.pem \
+  --key-path /etc/letsencrypt/live/app.example.com/privkey.pem \
+  --manual
+```
+
+Attach an existing acme.sh certificate:
+
+```bash
+sudo npc certs set app.example.com \
+  --cert-path /root/.acme.sh/app.example.com_ecc/fullchain.cer \
+  --key-path /root/.acme.sh/app.example.com_ecc/app.example.com.key \
+  --acme \
+  --acme-method dns \
+  --dns-provider cloudflare
+```
+
+Remove certificate metadata from a site but keep the acme.sh registration:
+
+```bash
+sudo npc certs delete app.example.com --force --keep-acme
+```
+
+Remove the acme.sh registration and delete the certificate/key files:
+
+```bash
+sudo npc certs delete app.example.com --force --files
+```
+
+`npc certs delete` creates a backup by default, rewrites the Nginx config as HTTP-only, runs `nginx -t`, and reloads Nginx only when the test passes. Use `--no-reload` or `--no-backup` only when you intentionally need that behavior.
 
 Create a local reverse proxy interactively:
 
