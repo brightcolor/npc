@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.31 - 2026-06-24
+
+- Added `npc webui` for an AdminLTE-based web interface.
+- Added `--listen` to bind the web UI to a chosen interface and port.
+- Added `npc webui unit`, `npc webui install-service`, and `npc webui uninstall-service` for persistent systemd operation.
+- Added a dark-mode AdminLTE dashboard with site inventory, status cards, API endpoints, and an operations console.
+- The operations console can run npc commands through argument lists without invoking a shell; write actions require explicit confirmation.
+
 ## 0.1.30 - 2026-06-14
 
 - Added keyboard navigation to the dependency-light terminal UI.

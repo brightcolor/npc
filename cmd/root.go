@@ -84,7 +84,7 @@ func isKnownCommand(name string) bool {
 		"enable": true, "export": true, "health": true, "help": true, "import": true, "install-nginx": true,
 		"list": true, "logs": true, "maintenance": true, "migrate": true, "monitor": true,
 		"reload": true, "restart": true, "restore": true, "search": true, "set": true, "show": true, "status": true,
-		"test": true, "tui": true, "unarchive": true, "uninstall": true, "upgrade": true, "repair": true,
+		"test": true, "tui": true, "unarchive": true, "uninstall": true, "upgrade": true, "webui": true, "repair": true,
 		"inspect": true, "diff": true, "rollback": true, "firewall": true,
 	}
 	return known[name]
@@ -132,7 +132,7 @@ func newRootCommand() *cobra.Command {
 	cmd.AddCommand(installNginxCommand(), backupCommand(), restoreCommand(), certsCommand(), doctorCommand(), logsCommand())
 	cmd.AddCommand(upgradeCommand(), uninstallCommand(), maintenanceCommand(), checkCommand(), exportCommand(), importCommand(), dockerCommand(), tuiCommand())
 	cmd.AddCommand(diffCommand(), rollbackCommand(), firewallCommand(), migrateCommand(), monitorCommand(), acmeCommand())
-	cmd.AddCommand(archiveCommand(), unarchiveCommand())
+	cmd.AddCommand(archiveCommand(), unarchiveCommand(), webuiCommand())
 	return cmd
 }
 

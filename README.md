@@ -63,6 +63,62 @@ At startup, the UI checks for Nginx and `acme.sh`. If either tool is missing, `n
 
 `acme.sh` usually installs into `/root/.acme.sh/acme.sh` when `npc` runs as root. `npc` runs the official installer using `email=<address>` when an account email is provided, searches the install location directly, and does not require `acme.sh` to be available in `$PATH`.
 
+## Web UI
+
+Start the AdminLTE web interface on demand:
+
+```bash
+npc webui --listen 127.0.0.1:8088
+```
+
+Bind it to another interface or all interfaces:
+
+```bash
+npc webui --listen 0.0.0.0:8088
+```
+
+The web UI uses AdminLTE, starts in dark mode, and includes a browser toggle for light/dark mode. It shows Nginx status, managed sites, runtime paths, JSON API links, and an operations console. The operations console can run npc commands through the npc binary without using a shell. Write actions require an explicit confirmation checkbox.
+
+Run it permanently with systemd:
+
+```bash
+sudo npc webui install-service --listen 127.0.0.1:8088
+sudo systemctl status npc-webui
+```
+
+Expose it behind your own reverse proxy authentication:
+
+```bash
+sudo npc webui install-service --listen 127.0.0.1:8088
+sudo npc create \
+  --hostname npc-admin.example.com \
+  --backend-host 127.0.0.1 \
+  --backend-port 8088 \
+  --backend-scheme http \
+  --ssl \
+  --acme \
+  --acme-method http \
+  --redirect-https \
+  --security-headers standard \
+  --non-interactive
+```
+
+If your reverse proxy handles authentication, the web UI can be bound to `0.0.0.0`, but binding to `127.0.0.1` and exposing it through an authenticated HTTPS reverse proxy is still the safer default.
+
+Preview the generated systemd unit:
+
+```bash
+npc webui unit --listen 127.0.0.1:8088
+```
+
+Remove the service:
+
+```bash
+sudo npc webui uninstall-service
+```
+
+AdminLTE assets are loaded from jsDelivr CDN. The npc binary still contains the actual web UI template and all server logic.
+
 Create a local reverse proxy interactively:
 
 ```bash
